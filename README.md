@@ -7,4 +7,5 @@
 
 ## Description:
 
--Hệ thống quản lý cuộc gọi chờ, ưu tiên khách hàng VIP hoặc khách hàng gọi lại nhiều lần.
+- Hệ thống quản lý cuộc gọi chờ, ưu tiên khách hàng VIP hoặc khách hàng gọi lại nhiều lần.
+- Chạy trên Console only.
