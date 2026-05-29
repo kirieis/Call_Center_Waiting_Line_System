@@ -1,0 +1,123 @@
+<mxfile host="Electron" agent="Antigravity">
+  <diagram id="use-case-diagram" name="Use Case Diagram">
+    <mxGraphModel dx="815" dy="592" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="sys_boundary" parent="1" style="shape=mxgraph.sysml.package;html=1;whiteSpace=wrap;align=left;verticalAlign=top;spacingTop=-2;spacingLeft=5;fontSize=14;strokeColor=#36393d;fillColor=#F8F9FA;strokeWidth=2;labelBackgroundColor=none;overflow=hidden;" value="&lt;b&gt;Call Center Waiting Line System&lt;/b&gt;" vertex="1">
+          <mxGeometry height="730" width="680" x="240" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_operator" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=13;fontStyle=1;" value="Operator" vertex="1">
+          <mxGeometry height="90" width="50" x="70" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="uc1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="Add new call" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uc2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="view waiting call line" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="uc3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="proceed to handle next call" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="uc4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="view call hisstory" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="uc5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="find specific call" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="uc6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="run experiments" vertex="1">
+          <mxGeometry height="75" width="190" x="310" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="uc7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;" value="priority calculate" vertex="1">
+          <mxGeometry height="75" width="190" x="640" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="uc8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Aging Algorithm&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="75" width="190" x="560" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="uc9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=12;" value="save call" vertex="1">
+          <mxGeometry height="75" width="190" x="560" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_1" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_2" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_3" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_4" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_5" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="assoc_6" edge="1" parent="1" source="actor_operator" style="endArrow=none;html=1;strokeWidth=1.5;" target="uc6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc_1_7" edge="1" parent="1" source="uc1" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" target="uc7" value="&lt;i&gt;«include»&lt;/i&gt;">
+          <mxGeometry relative="1" x="0.1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="inc_3_8" edge="1" parent="1" source="uc3" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" target="uc8" value="&lt;i&gt;«include»&lt;/i&gt;">
+          <mxGeometry relative="1" x="0.1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="inc_3_9" edge="1" parent="1" source="uc3" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" target="uc9" value="&lt;i&gt;«include»&lt;/i&gt;">
+          <mxGeometry relative="1" x="0.1" y="10" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ext_5_4" edge="1" parent="1" source="uc5" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#FFFFFF;" target="uc4" value="&lt;i&gt;«extend»&lt;/i&gt;">
+          <mxGeometry relative="1" x="-0.1" y="-15" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_box" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;strokeWidth=1;dashed=1;" value="" vertex="1">
+          <mxGeometry height="110" width="200" x="20" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" parent="1" style="text;html=1;fontSize=11;align=center;" value="&lt;b&gt;Chú thích&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="100" x="70" y="662" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_blue" parent="1" style="ellipse;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="14" width="20" x="30" y="688" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_blue_text" parent="1" style="text;html=1;fontSize=10;align=left;" value="Use Case chính" vertex="1">
+          <mxGeometry height="20" width="150" x="58" y="685" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_yellow" parent="1" style="ellipse;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1;" value="" vertex="1">
+          <mxGeometry height="14" width="20" x="30" y="712" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_yellow_text" parent="1" style="text;html=1;fontSize=10;align=left;" value="Use Case phụ (include)" vertex="1">
+          <mxGeometry height="20" width="150" x="58" y="709" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_dashed" edge="1" parent="1" style="endArrow=open;dashed=1;html=1;strokeWidth=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="30" y="745" as="sourcePoint" />
+            <mxPoint x="50" y="745" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_dashed_text" parent="1" style="text;html=1;fontSize=10;align=left;" value="include / extend" vertex="1">
+          <mxGeometry height="20" width="150" x="58" y="735" as="geometry" />
+        </mxCell>
+        <mxCell id="NR39zat1D95TCG33xpnl-13" edge="1" parent="1" source="NR39zat1D95TCG33xpnl-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;" target="NR39zat1D95TCG33xpnl-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NR39zat1D95TCG33xpnl-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Vip" vertex="1">
+          <mxGeometry height="60" width="30" x="970" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="NR39zat1D95TCG33xpnl-11" edge="1" parent="1" source="NR39zat1D95TCG33xpnl-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;" target="NR39zat1D95TCG33xpnl-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="NR39zat1D95TCG33xpnl-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="normal&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="30" x="970" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="NR39zat1D95TCG33xpnl-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;" value="new call" vertex="1">
+          <mxGeometry height="75" width="190" x="710" y="222.5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
