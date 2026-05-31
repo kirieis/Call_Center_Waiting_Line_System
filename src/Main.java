@@ -1,10 +1,20 @@
 /**
- * Lớp khởi chạy chương trình (Entry Point) của hệ thống hàng đợi cuộc gọi Call Center.
+ * Lớp khởi chạy chương trình (Entry Point) của hệ thống hàng đợi cuộc gọi Call
+ * Center.
  * Quản lý vòng lặp chương trình và menu tương tác với người dùng.
  */
 public class Main {
     // Quản lý nghiệp vụ và xử lý logic liên quan đến cuộc gọi
     private static final CallManager callManager = new CallManager();
+
+    private static void showMenu() {
+        System.out.println("\n===== Call Center Waiting Line System =====");
+        System.out.println("1. Add demo calls");
+        System.out.println("2. Add new call");
+        System.out.println("3. Serve next call");
+        System.out.println("4. Show waiting calls");
+        System.out.println("0. Exit");
+    }
 
     public static void main(String[] args) {
         int choice;
@@ -44,12 +54,5 @@ public class Main {
     /**
      * Hiển thị danh sách menu chức năng ra màn hình console.
      */
-    private static void showMenu() {
-        System.out.println("\n===== Call Center Waiting Line System =====");
-        System.out.println("1. Add demo calls");
-        System.out.println("2. Add new call");
-        System.out.println("3. Serve next call");
-        System.out.println("4. Show waiting calls");
-        System.out.println("0. Exit");
-    }
+
 }
