@@ -2,15 +2,16 @@ import java.util.Scanner;
 
 /**
  * Lớp điều phối và quản lý toàn bộ các nghiệp vụ liên quan đến cuộc gọi (Call)
- * và hàng đợi cuộc gọi (CallQueue). Cũng chứa các phương thức nhập liệu từ Console.
+ * và hàng đợi cuộc gọi (CallQueue). Cũng chứa các phương thức nhập liệu từ
+ * Console.
  */
 public class CallManager {
     // Đối tượng Scanner để đọc dữ liệu nhập từ bàn phím
     private final Scanner scanner = new Scanner(System.in);
-    
+
     // Hàng đợi cuộc gọi (áp dụng cấu trúc PriorityQueue để ưu tiên khách hàng)
     private final CallQueue callQueue = new CallQueue();
-    
+
     // Thứ tự cuộc gọi vào hệ thống (tăng dần tự động)
     private int orderNumber = 1;
 
@@ -40,7 +41,8 @@ public class CallManager {
         boolean vip = readYesNo("Is VIP? (y/n): ");
         int repeatCalls = readInt("Repeat calls: ");
 
-        // Tạo đối tượng Call với các thông tin đã nhập và orderNumber hiện tại, sau đó tăng orderNumber lên 1
+        // Tạo đối tượng Call với các thông tin đã nhập và orderNumber hiện tại, sau đó
+        // tăng orderNumber lên 1
         Call call = new Call(name, phone, vip, repeatCalls, orderNumber++);
         callQueue.addCall(call);
 
@@ -70,6 +72,7 @@ public class CallManager {
 
     /**
      * Phương thức phụ trợ: Đọc một chuỗi văn bản nhập vào từ console.
+     * 
      * @param message Tin nhắn hiển thị yêu cầu nhập liệu
      * @return Chuỗi văn bản người dùng đã nhập
      */
@@ -79,7 +82,9 @@ public class CallManager {
     }
 
     /**
-     * Phương thức phụ trợ: Đọc một số nguyên hợp lệ từ bàn phím (có xử lý ngoại lệ).
+     * Phương thức phụ trợ: Đọc một số nguyên hợp lệ từ bàn phím (có xử lý ngoại
+     * lệ).
+     * 
      * @param message Tin nhắn hiển thị yêu cầu nhập số
      * @return Giá trị số nguyên hợp lệ
      */
@@ -96,6 +101,7 @@ public class CallManager {
 
     /**
      * Phương thức phụ trợ: Đọc câu trả lời Có/Không dưới dạng phím y/n.
+     * 
      * @param message Tin nhắn hiển thị yêu cầu lựa chọn y/n
      * @return true nếu nhập 'y' hoặc 'Y', false nếu nhập 'n' hoặc 'N'
      */

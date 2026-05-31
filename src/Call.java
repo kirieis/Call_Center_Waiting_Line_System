@@ -1,13 +1,14 @@
 /**
  * Lớp đại diện cho một cuộc gọi của khách hàng (Call).
- * Chứa thông tin khách hàng và tính toán điểm ưu tiên (priority points) phục vụ.
+ * Chứa thông tin khách hàng và tính toán điểm ưu tiên (priority points) phục
+ * vụ.
  */
 public class Call {
     private final String customerName; // Tên khách hàng
-    private final String phoneNumber;  // Số điện thoại
-    private final boolean vip;         // Trạng thái VIP (true: VIP, false: Thường)
-    private final int repeatCalls;     // Số lần cuộc gọi lặp lại (gọi nhỡ/gọi lại trước đó)
-    private final int orderNumber;     // Số thứ tự cuộc gọi vào hệ thống (dùng để phục vụ FIFO khi cùng độ ưu tiên)
+    private final String phoneNumber; // Số điện thoại
+    private final boolean vip; // Trạng thái VIP (true: VIP, false: Thường)
+    private final int repeatCalls; // Số lần cuộc gọi lặp lại (gọi nhỡ/gọi lại trước đó)
+    private final int orderNumber; // Số thứ tự cuộc gọi vào hệ thống (dùng để phục vụ FIFO khi cùng độ ưu tiên)
 
     /**
      * Hàm khởi tạo (Constructor) tạo một cuộc gọi mới.
@@ -25,6 +26,7 @@ public class Call {
      * Công thức:
      * - Khách VIP được cộng thêm 100 điểm.
      * - Mỗi lần gọi lại được cộng thêm 10 điểm (repeatCalls * 10).
+     * 
      * @return Điểm ưu tiên của cuộc gọi dưới dạng số nguyên
      */
     public int getPriorityPoint() {
@@ -42,7 +44,7 @@ public class Call {
      * Lấy số thứ tự cuộc gọi vào hệ thống.
      */
     public int getOrderNumber() {
-        return orderNumber;
+        return this.orderNumber;
     }
 
     /**
