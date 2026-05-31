@@ -4,8 +4,7 @@
 target/
 .idea/
 .vscode/
-docs/others/
-docs/diagrams/.$class_diagram.drawio.
+docs/diagrams/.$class_diagram.drawio.bkp
 *.docx
 *.pdf
 *.xlsx
