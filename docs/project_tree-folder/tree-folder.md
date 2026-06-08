@@ -26,16 +26,13 @@ project-root/
 │           ├── Exp1_PriorityQueue.java
 │           ├── Exp2_AgingAlgorithm.java
 │           ├── Exp3_HistoryLookup.java
-│           └── Exp4_ConsoleRender.java
 │
-├── test/                            # Thư mục chứa các kiểm thử
-│   ├── AgingAlgorithmTest.java      # Kiểm thử thuật toán chống trôi
-│   └── CallQueueTest.java           # Kiểm thử độ chính xác của Priority Queue
 │
-├── data/                            # Chứa các dữ liệu lưu trữ
-│   └── call_history.csv             # Tệp tin lưu lịch sử cuộc gọi
+├── data/                           # Chứa các dữ liệu lưu trữ
+│   └── call_history.csv            # Tệp tin lưu lịch sử cuộc gọi
+    └── CustomerCalls.csv           # Tệp tin lưu thông tin khách
 │
-├── docs/                            # Tài liệu dự án
+├── docs/                           # Tài liệu dự án
 │   ├── AI_logs/
 │   └── diagrams/
 │       ├── use_case_diagram.drawio  # Sơ đồ use case
