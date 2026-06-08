@@ -8,4 +8,4 @@ docs/diagrams/.$class_diagram.drawio.bkp
 demo.docx
 *.pdf
 log.md
-create_ai_log.py
+*.py
