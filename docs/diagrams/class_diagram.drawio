@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Antigravity">
   <diagram id="class-diagram" name="Class Diagram">
-    <mxGraphModel dx="815" dy="592" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" math="0" shadow="0">
+    <mxGraphModel dx="968" dy="703" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -212,7 +212,6 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="550" y="400" />
-              <mxPoint x="870" y="370" />
               <mxPoint x="1010" y="380" />
             </Array>
           </mxGeometry>
@@ -235,7 +234,6 @@
         <mxCell id="rel_history_call" edge="1" parent="1" source="c_history" style="endArrow=open;endSize=10;html=1;strokeWidth=1.5;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" target="c_call" value="0..*">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1080" y="530" />
               <mxPoint x="1070" y="660" />
             </Array>
           </mxGeometry>
