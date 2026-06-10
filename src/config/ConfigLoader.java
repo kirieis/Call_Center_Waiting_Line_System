@@ -39,19 +39,20 @@ public class ConfigLoader {
      */
     private Path findProjectRoot() {
         Path current = Paths.get(System.getProperty("user.dir"));
-        
+
         // Search up to 5 levels to find project root
         for (int i = 0; i < 5; i++) {
             if (isProjectRoot(current)) {
-                System.out.println("  [✓] Project root found: " + current.toAbsolutePath());
+                System.out.println("  DONE! Project root found: " + current.toAbsolutePath());
                 return current;
             }
             Path parent = current.getParent();
-            if (parent == null) break;
+            if (parent == null)
+                break;
             current = parent;
         }
-        
-        System.out.println("  [!] Project root not found, using current directory");
+
+        System.out.println("  [!] Project root not found, using current directory [!]");
         return Paths.get(System.getProperty("user.dir"));
     }
 
@@ -82,7 +83,7 @@ public class ConfigLoader {
 
         try (FileInputStream fis = new FileInputStream(configFile)) {
             config.load(fis);
-            System.out.println("  [✓] Configuration loaded from: " + configPath.toAbsolutePath());
+            System.out.println("  DONE! Configuration loaded from: " + configPath.toAbsolutePath());
         } catch (IOException e) {
             System.out.println("  [!] Failed to load configuration: " + e.getMessage());
         }
@@ -91,7 +92,7 @@ public class ConfigLoader {
     /**
      * Gets a configuration property with a default value.
      * 
-     * @param key property key
+     * @param key          property key
      * @param defaultValue default value if key not found
      * @return property value or default value
      */
@@ -102,7 +103,7 @@ public class ConfigLoader {
     /**
      * Gets an integer configuration property with a default value.
      * 
-     * @param key property key
+     * @param key          property key
      * @param defaultValue default value if key not found
      * @return property value as integer or default value
      */
