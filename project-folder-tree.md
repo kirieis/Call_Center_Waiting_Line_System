@@ -68,20 +68,6 @@ Call_Center_Waiting_Line_System-Group7/
 │   └── 📁 project_tree-folder/          # Project tree folder
 │       └── 📄 tree-folder.md            # Tree folder markdown
 │
-├── 📁 config/                           # Configuration directory (empty)
-│
-├── 📁 core/                             # Core directory (empty)
-│
-├── 📁 model/                            # Model directory (empty)
-│
-├── 📁 storage/                          # Storage directory (empty)
-│
-├── 📁 ui/                               # UI directory (empty)
-│
-├── 📁 main/                             # Main directory (empty)
-│
-├── 📁 experiment/                       # Experiment directory (empty)
-│
 └── 📁 out/                              # Output directory (build artifacts)
     └── [Compiled class files & artifacts]
 ```
@@ -152,5 +138,5 @@ Call_Center_Waiting_Line_System-Group7/
 
 ---
 
-**Generated**: 2026-06-11
+
 

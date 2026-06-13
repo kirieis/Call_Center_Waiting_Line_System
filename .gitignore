@@ -1,2 +1,12 @@
+# Java
 *.class
+*.jar
+*.war
+*.log
+*.swp
+.vscode/
+.idea/
 out/
+
+
+
