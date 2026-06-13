@@ -8,8 +8,6 @@ Call_Center_Waiting_Line_System-Group7/
 ├── 📄 README.md
 ├── 📄 .gitignore
 │
-├── 📁 .git/
-│   └── [Git repository files]
 │
 ├── 📁 src/                              # Source code directory
 │   ├── 📁 config/                       # Configuration files
