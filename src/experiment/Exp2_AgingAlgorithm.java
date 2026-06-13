@@ -175,6 +175,22 @@ public class Exp2_AgingAlgorithm {
         System.out.printf("│ Block 3 (30-60m: VIP 20%%) │     %4d seconds    │     %4d seconds    │%n", maxWtReg[3], maxWtVip[3]);
         System.out.println("└───────────────────────────┴─────────────────────┴─────────────────────┘");
 
+        // Ghi kết quả so sánh ra file CSV
+        try {
+            config.ConfigLoader loader = new config.ConfigLoader();
+            String csvPath = loader.resolvePath("data/Exp2_AgingAlgorithm.csv");
+            storage.FileHandler fh = new storage.FileHandler(csvPath);
+            List<String> csvLines = new ArrayList<>();
+            csvLines.add("Simulation Phase,Regular Cust Max WT (seconds),VIP Customer Max WT (seconds)");
+            csvLines.add(String.format("Block 1 (00-15m: VIP 20%%),%d,%d", maxWtReg[1], maxWtVip[1]));
+            csvLines.add(String.format("Block 2 (15-30m: VIP 50%%),%d,%d", maxWtReg[2], maxWtVip[2]));
+            csvLines.add(String.format("Block 3 (30-60m: VIP 20%%),%d,%d", maxWtReg[3], maxWtVip[3]));
+            fh.writeLines(csvLines);
+            System.out.println("  [✓] Simulation results exported successfully to " + csvPath);
+        } catch (Exception e) {
+            System.err.println("  [!] Failed to write CSV file: " + e.getMessage());
+        }
+
         System.out.println("\n💡 DATA SCIENCE ARGUMENTATION:");
         System.out.printf("  - At the peak of congestion (Block 2 - VIP Spike), the longest waiting time for a regular customer was %d seconds (~%.1f minutes).%n", 
                 maxWtReg[2], (maxWtReg[2] / 60.0));

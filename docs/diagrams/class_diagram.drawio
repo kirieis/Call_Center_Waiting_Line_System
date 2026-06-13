@@ -208,22 +208,13 @@
         <mxCell id="c_exp2_m" parent="c_exp2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontFamily=Helvetica;fontSize=10;" value="+ run(): void" vertex="1">
           <mxGeometry height="20" width="230" y="36" as="geometry" />
         </mxCell>
-        <mxCell id="c_exp3" parent="1" style="swimlane;fontStyle=1;align=center;startSize=28;html=1;collapsible=0;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=1.5;" value="Exp3_HistoryLookup" vertex="1">
+        <mxCell id="c_exp3" parent="1" style="swimlane;fontStyle=1;align=center;startSize=28;html=1;collapsible=0;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=1.5;" value="Exp3_CallbackFairness" vertex="1">
           <mxGeometry height="60" width="230" x="1180" y="770" as="geometry" />
         </mxCell>
         <mxCell id="c_exp3_sep" parent="c_exp3" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=10;rotatable=0;labelPosition=left;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
           <mxGeometry height="8" width="230" y="28" as="geometry" />
         </mxCell>
         <mxCell id="c_exp3_m" parent="c_exp3" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontFamily=Helvetica;fontSize=10;" value="+ run(): void" vertex="1">
-          <mxGeometry height="20" width="230" y="36" as="geometry" />
-        </mxCell>
-        <mxCell id="c_exp4" parent="1" style="swimlane;fontStyle=1;align=center;startSize=28;html=1;collapsible=0;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=1.5;" value="Exp4_ConsoleRender" vertex="1">
-          <mxGeometry height="60" width="230" x="1430" y="770" as="geometry" />
-        </mxCell>
-        <mxCell id="c_exp4_sep" parent="c_exp4" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=10;rotatable=0;labelPosition=left;points=[];portConstraint=eastwest;strokeColor=inherit;" value="" vertex="1">
-          <mxGeometry height="8" width="230" y="28" as="geometry" />
-        </mxCell>
-        <mxCell id="c_exp4_m" parent="c_exp4" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontFamily=Helvetica;fontSize=10;" value="+ run(): void" vertex="1">
           <mxGeometry height="20" width="230" y="36" as="geometry" />
         </mxCell>
         <mxCell id="rel_main_menu" edge="1" parent="1" source="c_main" style="endArrow=open;endSize=12;dashed=1;html=1;strokeWidth=1.5;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="c_mainmenu" value="">

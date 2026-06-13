@@ -39,20 +39,25 @@ public class CallHistoryStore {
      */
     private void initFileIfNeeded() {
         if (!fileHandler.exists()) {
-            List<String> header = new ArrayList<>();
-            header.add("customerId,customerName,phoneNumber,isVIP,repeatCalls,orderNumber,priorityScore,status");
-            fileHandler.writeLines(header);
+            clearHistory();
         }
     }
 
     /**
+     * Clears history by creating a fresh file containing only the header.
+     */
+    public void clearHistory() {
+        List<String> header = new ArrayList<>();
+        header.add("No.| Cust ID| Cust Name| Phone| VIP| Repeats| Score| Status");
+        fileHandler.writeLines(header);
+    }
+
+    /**
      * Saves processed call into history file.
-     * Automatically sets status to COMPLETED.
      * 
      * @param call call to save
      */
     public void save(Call call) {
-        call.setStatus(CallStatus.COMPLETED);
         fileHandler.appendLine(toCSV(call));
     }
 
@@ -110,13 +115,13 @@ public class CallHistoryStore {
      * Converts a Call object to CSV string.
      */
     private String toCSV(Call call) {
-        return String.join(",",
+        return String.join("|",
+                String.valueOf(call.getOrderNumber()),
                 call.getCustomerId(),
                 call.getCustomerName(),
                 call.getPhoneNumber(),
                 String.valueOf(call.isVIP()),
                 String.valueOf(call.getRepeatCalls()),
-                String.valueOf(call.getOrderNumber()),
                 String.valueOf(call.getPriorityScore()),
                 call.getStatus().name()
         );
@@ -126,16 +131,16 @@ public class CallHistoryStore {
      * Parses a CSV string to Call object.
      */
     private Call fromCSV(String line) {
-        String[] parts = line.split(",");
+        String[] parts = line.split("\\|");
         if (parts.length < 8) return null;
 
         Call call = new Call(
-                parts[0].trim(),
                 parts[1].trim(),
                 parts[2].trim(),
-                Boolean.parseBoolean(parts[3].trim()),
-                Integer.parseInt(parts[4].trim()),
-                Integer.parseInt(parts[5].trim())
+                parts[3].trim(),
+                Boolean.parseBoolean(parts[4].trim()),
+                Integer.parseInt(parts[5].trim()),
+                Integer.parseInt(parts[0].trim())
         );
         call.setPriorityScore(Integer.parseInt(parts[6].trim()));
         call.setStatus(CallStatus.valueOf(parts[7].trim()));

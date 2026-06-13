@@ -381,9 +381,38 @@ Trợ lý AI đã ghi chép cẩn thận và cập nhật toàn bộ loạt hộ
 
 ---
 
+### **[LƯỢT HỘI THOẠI 18] Cập Nhật Thuật Toán Xử Lý Nhiều Cuộc Gọi, CSV Thực Nghiệm, Khắc Phục Lỗi .gitignore & Cập Nhật Diagram**
+
+#### **Người dùng (User):**
+> *"project CALL CENTER WAITING LINE SYSTEM mô phỏng xử lí hàng chờ các cuộc gọi khách hàng ưu tiên vip và khách gọi nhiều lần. Hiện tại tôi có 1 số vấn đề cần được xử lí như sau: ... Sau khi hoàn thành nội dung trên thì hãy chỉnh sửa lại cấu trúc trong class_diagram.drawio và use_case_diagram.drawio và mô tả của 2 diagram là class_diagram.đocx và use_case_diagram.docx. Cập nhập AI_AuditLog giúp tôi. Cập nhập cây thư mục sau khi hoàn thành nội dung trên giúp tôi. Các dòng code in ra phải là tiếng anh còn các comment thì để tiếng việt mô tả cho người đọc dễ hiểu. Cuối cùng viết cho tôi 1 file code mermaid flowchart của project nằm ở docs/diagrama."*
+
+#### **Trợ lý AI (Antigravity) phản hồi & hành động:**
+AI đã hoàn thành toàn bộ các yêu cầu cải tiến và bàn giao hệ thống tối ưu hóa:
+
+1. **Khắc phục lỗi `.gitignore`:**
+   - Loại bỏ các file `.class` đã bị cache trước đó bằng lệnh `git rm --cached` và đưa thư mục `out/` vào `.gitignore` thành công.
+2. **Quản lý dữ liệu file lịch sử:**
+   - Khi chạy sinh dữ liệu ngẫu nhiên (Option 1), file `call_history.csv` sẽ được khởi tạo mới hoàn toàn với tiêu đề cột dạng pipe-separated: `No.| Cust ID| Cust Name| Phone| VIP| Repeats| Score| Status`.
+   - Cập nhật hàm chuyển đổi định dạng `toCSV` và `fromCSV` để phân tách dữ liệu bằng ký tự `|` đúng trật tự.
+3. **Cấu hình xử lý đồng thời nhiều cuộc gọi:**
+   - Bổ sung cấu hình `process.multiple.count=10` vào tệp `settings.properties` và triển khai Option 11: `Process multiple calls` trong menu chính.
+4. **Tỷ lệ kết quả xử lý cuộc gọi:**
+   - Cấu hình phân phối xác suất ngẫu nhiên: 70% cuộc gọi sau xử lý có trạng thái là `COMPLETED` và 30% là `MISSED` cho cả hai chức năng xử lý 1 cuộc gọi (Option 5) và nhiều cuộc gọi (Option 11).
+5. **Giao diện kết xuất dữ liệu tùy biến:**
+   - Loại bỏ cơ chế phân trang 20 dòng ảo khi xem danh sách hàng chờ (Option 4) và xem lịch sử (Option 6).
+   - Hiển thị VIP status dạng `"true"` / `"false"` đối với hàng chờ chờ phục vụ, và hiển thị ẩn danh dạng `"??"` hay `"?"` đối với các chức năng xem/tìm kiếm lịch sử (Option 6 và 7).
+6. **Thực nghiệm lưu trữ tệp CSV so sánh:**
+   - Cải tiến cả 3 lớp thực nghiệm (`Exp1_PriorityQueue.java`, `Exp2_AgingAlgorithm.java`, `Exp3_CallbackFairness.java`) để ghi kết quả so sánh thống kê đè lên các tệp CSV chuyên biệt: `Exp1_PriorityQueue.csv`, `Exp2_AgingAlgorithm.csv`, `Exp3_CallbackFairness.csv` lưu trữ trực tiếp trong thư mục `data/` phục vụ viết báo cáo LaTeX.
+7. **Cập nhật sơ đồ cấu trúc và mô tả tài liệu:**
+   - Điều chỉnh tệp cấu trúc Draw.io (`class_diagram.drawio`) để đổi tên `Exp3_HistoryLookup` thành `Exp3_CallbackFairness` và loại bỏ lớp thực nghiệm thừa `Exp4_ConsoleRender`.
+   - Cập nhật các tệp mô tả Microsoft Word (`class_diagram.docx` và `use_case_diagram.docx`) đồng bộ với sơ đồ vẽ mới.
+   - Viết thành công tệp Mermaid flowchart tổng quan logic hệ thống tại `docs/diagrama`.
+
+---
+
 ## Các Bước Tiếp Theo Của Dự Án
 
-1.  **Chạy thử nghiệm hệ thống**: Sử dụng các cuộc gọi mẫu (Demo calls) để kiểm chứng thứ tự ưu tiên của khách hàng VIP và khách hàng thường.
-2.  **Đánh giá thuật toán**: Quan sát và kiểm tra xem các cuộc gọi trùng điểm ưu tiên có thực sự được sắp xếp tăng dần theo thời gian (FIFO) hay không.
-3.  **Tích hợp thuật toán Chống trôi (Aging Algorithm)**: Tiếp tục hoàn thiện phần tăng điểm ưu tiên tự động cho các cuộc gọi chờ lâu để tránh tình trạng đói tài nguyên (starvation).
+1. **Vận hành thực nghiệm trên LaTeX:** Sử dụng trực tiếp các file CSV vừa kết xuất từ folder `data/` để nạp dữ liệu so sánh vào các bảng biểu bài báo cáo khoa học.
+2. **Tối ưu hóa tham số:** Tùy biến các tham số `aging.threshold.ms`, `aging.boost` và `process.multiple.count` trong `settings.properties` tùy theo quy mô tải thực tế của tổng đài.
+
 

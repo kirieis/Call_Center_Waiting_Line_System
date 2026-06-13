@@ -114,6 +114,23 @@ public class Exp3_CallbackFairness {
         System.out.printf("│ Retain Wait Time Accumulation    │      %.4f (Optimal Fairness)     │%n", giniAcc);
         System.out.println("└──────────────────────────────────┴──────────────────────────────────┘");
 
+        // Ghi kết quả so sánh ra file CSV
+        try {
+            config.ConfigLoader loader = new config.ConfigLoader();
+            String csvPath = loader.resolvePath("data/Exp3_CallbackFairness.csv");
+            storage.FileHandler fh = new storage.FileHandler(csvPath);
+            List<String> csvLines = new ArrayList<>();
+            csvLines.add("Metric,Value");
+            csvLines.add(String.format("Circular Queue Memory Shifts,%d", circularShifts));
+            csvLines.add(String.format("Doubly Linked List Pointer Updates,%d", dllPointers));
+            csvLines.add(String.format(Locale.US, "Gini Index (No Callback Accumulation),%.4f", giniNoAcc));
+            csvLines.add(String.format(Locale.US, "Gini Index (Retain Wait Time Accumulation),%.4f", giniAcc));
+            fh.writeLines(csvLines);
+            System.out.println("  [✓] Simulation results exported successfully to " + csvPath);
+        } catch (Exception e) {
+            System.err.println("  [!] Failed to write CSV file: " + e.getMessage());
+        }
+
         System.out.println("\n💡 EXPERT DISCUSSION & EVALUATION:");
         System.out.println("  1. Data Structure Architecture:");
         System.out.println("     - Circular Queue is extremely limited when retaining insertion queue order, due to constant");

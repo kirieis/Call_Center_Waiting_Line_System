@@ -1,0 +1,4 @@
+Simulation Phase,Regular Cust Max WT (seconds),VIP Customer Max WT (seconds)
+Block 1 (00-15m: VIP 20%),6645,5797
+Block 2 (15-30m: VIP 50%),9464,9253
+Block 3 (30-60m: VIP 20%),0,0

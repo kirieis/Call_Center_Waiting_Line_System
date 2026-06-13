@@ -224,6 +224,23 @@ public class Exp1_PriorityQueue {
         System.out.printf("│ VIP Customer             │       %8.2f seconds    │       %8.2f seconds    │%n", vipAwtA, vipAwtB);
         System.out.printf("│ OVERALL SYSTEM           │       %8.2f seconds    │       %8.2f seconds    │%n", totalAwtA, totalAwtB);
         System.out.println("└──────────────────────────┴──────────────────────────┴──────────────────────────┘");
+        
+        // Ghi kết quả so sánh ra file CSV
+        try {
+            config.ConfigLoader loader = new config.ConfigLoader();
+            String csvPath = loader.resolvePath("data/Exp1_PriorityQueue.csv");
+            storage.FileHandler fh = new storage.FileHandler(csvPath);
+            List<String> csvLines = new ArrayList<>();
+            csvLines.add("Customer Classification,Scenario A (Dual Queue) (seconds),Scenario B (Aging Queue) (seconds)");
+            csvLines.add(String.format(Locale.US, "Regular Customer,%.2f,%.2f", regAwtA, regAwtB));
+            csvLines.add(String.format(Locale.US, "VIP Customer,%.2f,%.2f", vipAwtA, vipAwtB));
+            csvLines.add(String.format(Locale.US, "OVERALL SYSTEM,%.2f,%.2f", totalAwtA, totalAwtB));
+            fh.writeLines(csvLines);
+            System.out.println("  [✓] Simulation results exported successfully to " + csvPath);
+        } catch (Exception e) {
+            System.err.println("  [!] Failed to write CSV file: " + e.getMessage());
+        }
+
         System.out.println("\n💡 EXPERIMENT 1 CONCLUSION:");
         if (regAwtB < regAwtA) {
             System.out.println("  [✓] Scenario B (Single Queue + Aging) is significantly more optimal for regular customers.");

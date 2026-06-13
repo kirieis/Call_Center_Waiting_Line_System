@@ -36,8 +36,17 @@ project-root/
 │
 ├── docs/                             # Tài liệu dự án
 │   ├── AI_logs/
-│   └── diagrams/
-│       ├── use_case_diagram.drawio  # Sơ đồ use case
-│       └── class_diagram.drawio     # Sơ đồ lớp
+│   │   ├── NguyenVanAn_AI_AuditLog.xlsx  # Bảng Excel Audit Log
+│   │   └── NguyenVanAn_log.md        # Nhật ký hội thoại AI
+│   │
+│   ├── diagrams/
+│   │   ├── use_case_diagram.drawio  # Sơ đồ use case Draw.io
+│   │   └── class_diagram.drawio     # Sơ đồ lớp Draw.io
+│   │
+│   ├── diagrams description/
+│   │   ├── class_diagram.docx       # Mô tả sơ đồ lớp
+│   │   └── use_case_diagram.docx    # Mô tả sơ đồ use case
+│   │
+│   └── diagrama                      # Tệp mã nguồn vẽ Mermaid Flowchart của project
 │
 └── README.md

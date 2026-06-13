@@ -44,6 +44,7 @@ public class MainMenu {
     private String historyPath;
     private int circularCapacity;
     private int generateCount;
+    private int processMultipleCount;
 
     public MainMenu() {
         this.configLoader = new ConfigLoader();
@@ -64,6 +65,7 @@ public class MainMenu {
         historyPath = configLoader.getHistoryPath();
         circularCapacity = configLoader.getCircularQueueCapacity();
         generateCount = configLoader.getGenerateCount();
+        processMultipleCount = configLoader.getProcessMultipleCount();
 
         // Configure priority scoring
         int vipBonus = configLoader.getVipBonus();
@@ -103,6 +105,7 @@ public class MainMenu {
                 "8.  Apply Aging algorithm",
                 "9.  View Circular Queue status",
                 "10. Run experiments",
+                "11. Process multiple calls (" + processMultipleCount + " calls)",
                 "",
                 "0.  Exit"
         };
@@ -146,10 +149,13 @@ public class MainMenu {
             case 10:
                 runExperiments();
                 break;
+            case 11:
+                processMultipleCalls();
+                break;
             case 0:
                 return false;
             default:
-                renderer.renderMessage("Invalid choice. Please choose 0-10.");
+                renderer.renderMessage("Invalid choice. Please choose 0-11.");
         }
         return true;
     }
@@ -158,6 +164,8 @@ public class MainMenu {
     private void generateData() {
         System.out.println("\n  ─── GENERATE RANDOM DATA ───");
         dataGen.generate(generateCount, rawDataPath);
+        historyStore.clearHistory();
+        renderer.renderMessage("call_history.csv has been cleared and reset.");
     }
 
     // ===== Function 2: Auto Sort & Load =====
@@ -194,7 +202,7 @@ public class MainMenu {
     private void viewWaitingQueue() {
         System.out.println("\n  ─── WAITING QUEUE (PRIORITY QUEUE) ───");
         List<Call> snapshot = router.getQueueSnapshot();
-        renderer.renderQueue(snapshot);
+        renderer.renderQueue(snapshot, false, "boolean");
     }
 
     // ===== Function 5: Process next call =====
@@ -210,10 +218,16 @@ public class MainMenu {
         renderer.renderMessage("Processing call:");
         renderer.renderCall(call);
 
-        // Mark completed and save to history
-        call.setStatus(CallStatus.COMPLETED);
+        // Randomly set status: 70% COMPLETED, 30% MISSED
+        java.util.Random rand = new java.util.Random();
+        if (rand.nextInt(100) < 70) {
+            call.setStatus(CallStatus.COMPLETED);
+        } else {
+            call.setStatus(CallStatus.MISSED);
+        }
+
         historyStore.save(call);
-        renderer.renderMessage("Call completed and saved to history.");
+        renderer.renderMessage("Call processed (Status: " + call.getStatus() + ") and saved to history.");
         renderer.renderMessage("Remaining in queue: " + router.getQueueSize());
     }
 
@@ -234,7 +248,39 @@ public class MainMenu {
             renderer.renderMessage("No calls matching: \"" + keyword + "\"");
         } else {
             renderer.renderMessage("Found " + results.size() + " results:");
-            renderer.renderQueue(results);
+            renderer.renderQueue(results, false, "question");
+        }
+    }
+
+    // ===== Function 11: Process multiple calls =====
+    private void processMultipleCalls() {
+        System.out.println("\n  ─── PROCESS MULTIPLE CALLS ───");
+        int countToProcess = processMultipleCount;
+        int processed = 0;
+        java.util.Random rand = new java.util.Random();
+
+        for (int i = 0; i < countToProcess; i++) {
+            Call call = router.processNext();
+            if (call == null) {
+                break;
+            }
+
+            // Randomly set status: 70% COMPLETED, 30% MISSED
+            if (rand.nextInt(100) < 70) {
+                call.setStatus(CallStatus.COMPLETED);
+            } else {
+                call.setStatus(CallStatus.MISSED);
+            }
+
+            historyStore.save(call);
+            processed++;
+        }
+
+        if (processed == 0) {
+            renderer.renderMessage("No calls in queue to process.");
+        } else {
+            renderer.renderMessage("Successfully processed " + processed + " calls.");
+            renderer.renderMessage("Remaining in queue: " + router.getQueueSize());
         }
     }
 

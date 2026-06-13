@@ -19,11 +19,13 @@ public class ConsoleRenderer {
     private static final String THIN_SEPARATOR = "───────────────────────────────────────────────────────────────────────────────────────────────────";
 
     /**
-     * Displays call list in a table, with pagination.
+     * Displays call list in a table, with pagination and custom VIP formatting.
      * 
      * @param calls list of calls
+     * @param paginate whether to paginate every PAGE_SIZE lines
+     * @param vipMode display format for VIP status ("question", "boolean", or "default")
      */
-    public void renderQueue(List<Call> calls) {
+    public void renderQueue(List<Call> calls, boolean paginate, String vipMode) {
         if (calls == null || calls.isEmpty()) {
             renderMessage("No calls in queue.");
             return;
@@ -31,24 +33,33 @@ public class ConsoleRenderer {
 
         System.out.println();
         System.out.println("  " + LINE_SEPARATOR);
-        System.out.printf("  ║ %-5s │ %-8s │ %-22s │ %-12s │ %-4s │ %-7s │ %-7s │ %-10s ║%n",
+        System.out.printf("  ║ %-5s │ %-8s │ %-22s │ %-12s │ %-5s │ %-7s │ %-7s │ %-10s ║%n",
                 "No.", "Cust ID", "Cust Name", "Phone", "VIP", "Repeats", "Score", "Status");
         System.out.println("  " + LINE_SEPARATOR);
 
         for (int i = 0; i < calls.size(); i++) {
             Call call = calls.get(i);
-            System.out.printf("  ║ %-5d │ %-8s │ %-22s │ %-12s │ %-4s │ %-7d │ %-7d │ %-10s ║%n",
+            String vipStr;
+            if ("question".equals(vipMode)) {
+                vipStr = "?";
+            } else if ("boolean".equals(vipMode)) {
+                vipStr = call.isVIP() ? "true" : "false";
+            } else {
+                vipStr = call.isVIP() ? " ★" : " -";
+            }
+
+            System.out.printf("  ║ %-5d │ %-8s │ %-22s │ %-12s │ %-5s │ %-7d │ %-7d │ %-10s ║%n",
                     (i + 1),
                     truncate(call.getCustomerId(), 8),
                     truncate(call.getCustomerName(), 22),
                     call.getPhoneNumber(),
-                    call.isVIP() ? " ★" : " -",
+                    vipStr,
                     call.getRepeatCalls(),
                     call.getAgedPriority(),
                     call.getStatus());
 
             // Paging every PAGE_SIZE lines
-            if ((i + 1) % PAGE_SIZE == 0 && i < calls.size() - 1) {
+            if (paginate && (i + 1) % PAGE_SIZE == 0 && i < calls.size() - 1) {
                 System.out.println("  " + THIN_SEPARATOR);
                 System.out.printf("  ║ --- Page %d/%d --- Showing %d/%d calls ---%n",
                         (i + 1) / PAGE_SIZE, (int) Math.ceil((double) calls.size() / PAGE_SIZE),
@@ -60,6 +71,13 @@ public class ConsoleRenderer {
         System.out.println("  " + LINE_SEPARATOR);
         System.out.println("  Total: " + calls.size() + " calls");
         System.out.println();
+    }
+
+    /**
+     * Backward-compatible renderQueue.
+     */
+    public void renderQueue(List<Call> calls) {
+        renderQueue(calls, true, "default");
     }
 
     /**
@@ -93,7 +111,7 @@ public class ConsoleRenderer {
         System.out.println("\n  ╔═════════════════════════════════════════╗");
         System.out.println("  ║            CALL HISTORY                 ║");
         System.out.println("  ╚═════════════════════════════════════════╝");
-        renderQueue(calls);
+        renderQueue(calls, false, "question");
     }
 
     /**

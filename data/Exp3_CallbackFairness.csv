@@ -1,0 +1,5 @@
+Metric,Value
+Circular Queue Memory Shifts,60309
+Doubly Linked List Pointer Updates,4000
+Gini Index (No Callback Accumulation),0.2653
+Gini Index (Retain Wait Time Accumulation),0.3640

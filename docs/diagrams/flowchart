@@ -1,0 +1,98 @@
+flowchart TD
+    %% 1. Định nghĩa các Styles
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    classDef startEnd fill:#d5e8d4,stroke:#82b366,stroke-width:2px;
+    classDef process fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px;
+    classDef decision fill:#fff2cc,stroke:#d6b656,stroke-width:2px;
+    classDef storage fill:#ffe6cc,stroke:#d79b00,stroke-width:2px;
+    classDef experiment fill:#e1d5e7,stroke:#9673a6,stroke-width:2px;
+
+    %% 2. Luồng xử lý chính (Main flow)
+    Start([System Start]) --> LoadConfig["ConfigLoader: Load settings.properties"]
+    LoadConfig --> MainMenuLoop["MainMenu: Display Operator Menu 0-11"]
+
+    %% Menu Options Decisions
+    MainMenuLoop --> Opt{Operator Choice}
+
+    %% Option 1
+    Opt -->|Option 1| GenData["DataGenerator: Generate 10k random calls"]
+    GenData --> WriteRawCSV[("Write data/CustomerCalls.csv")]
+    GenData --> ClearHistory["Clear and reset call history"]
+    ClearHistory --> WriteCleanHistory[("Write data/call_history.csv with headers")]
+    WriteCleanHistory --> MainMenuLoop
+
+    %% Option 2
+    Opt -->|Option 2| LoadCSV["CallProcessor: Read CustomerCalls.csv"]
+    LoadCSV --> SortQueue["Calculate base priority & sort"]
+    SortQueue --> SetPQ["CallRouter: Assign sorted Priority Queue"]
+    SetPQ --> MainMenuLoop
+
+    %% Option 3
+    Opt -->|Option 3| InputCall["InputHandler: Enter Call manually"]
+    InputCall --> AddCall["CallRouter: Insert into Priority Queue"]
+    AddCall --> MainMenuLoop
+
+    %% Option 4
+    Opt -->|Option 4| ViewQueue["ConsoleRenderer: View waiting queue"]
+    ViewQueue --> QueueFormat["Render VIP status as 'true'/'false' with pagination disabled"]
+    QueueFormat --> MainMenuLoop
+
+    %% Option 5
+    Opt -->|Option 5| ProcNext["CallRouter: Dequeue highest priority call"]
+    ProcNext --> StatusRand5{"70% COMPLETED / 30% MISSED?"}
+    StatusRand5 -->|70%| SetCompleted5["Set status = COMPLETED"]
+    StatusRand5 -->|30%| SetMissed5["Set status = MISSED"]
+    SetCompleted5 --> SaveHistory5["CallHistoryStore: Append to call_history.csv"]
+    SetMissed5 --> SaveHistory5
+    SaveHistory5 --> MainMenuLoop
+
+    %% Option 6 & 7
+    Opt -->|Option 6| ViewHistory["ConsoleRenderer: View call history"]
+    Opt -->|Option 7| SearchHistory["Input keyword & search history"]
+    ViewHistory --> HistFormat["Render VIP status as '?' with pagination disabled"]
+    SearchHistory --> HistFormat
+    HistFormat --> MainMenuLoop
+
+    %% Option 8
+    Opt -->|Option 8| RunAging["CallRouter: Apply Aging Algorithm"]
+    RunAging --> BoostScore["Boost priorities of waiting calls exceeding threshold"]
+    BoostScore --> MainMenuLoop
+
+    %% Option 9
+    Opt -->|Option 9| ViewCircular["ConsoleRenderer: View Circular Queue status"]
+    ViewCircular --> MainMenuLoop
+
+    %% Option 10
+    Opt -->|Option 10| RunExpMenu{Select Experiment}
+    RunExpMenu -->|Exp 1| Exp1["Exp1_PriorityQueue: Dual Queue vs Single Queue + Aging"]
+    RunExpMenu -->|Exp 2| Exp2["Exp2_AgingAlgorithm: Starvation test under VIP Spike"]
+    RunExpMenu -->|Exp 3| Exp3["Exp3_CallbackFairness: Circular Queue vs DLL Callback Fairness"]
+    
+    Exp1 --> Exp1CSV[("Write data/Exp1_PriorityQueue.csv")]
+    Exp2 --> Exp2CSV[("Write data/Exp2_AgingAlgorithm.csv")]
+    Exp3 --> Exp3CSV[("Write data/Exp3_CallbackFairness.csv")]
+    
+    Exp1CSV --> MainMenuLoop
+    Exp2CSV --> MainMenuLoop
+    Exp3CSV --> MainMenuLoop
+
+    %% Option 11
+    Opt -->|Option 11| ProcMultiple["CallRouter: Dequeue up to process.multiple.count calls"]
+    ProcMultiple --> LoopMultiple{For each call}
+    LoopMultiple -->|Next call exists| StatusRand11{"70% COMPLETED / 30% MISSED?"}
+    StatusRand11 -->|70%| SetCompleted11["Set status = COMPLETED"]
+    StatusRand11 -->|30%| SetMissed11["Set status = MISSED"]
+    SetCompleted11 --> SaveHistory11["CallHistoryStore: Append to call_history.csv"]
+    SetMissed11 --> SaveHistory11
+    SaveHistory11 --> LoopMultiple
+    LoopMultiple -->|No more calls or limit reached| MainMenuLoop
+
+    %% Option 0
+    Opt -->|Option 0| End([System Exit])
+
+    %% 3. Gán Class hàng loạt ở cuối (Tránh lỗi Parser hoàn toàn)
+    class Start,End startEnd;
+    class Opt,StatusRand5,RunExpMenu,LoopMultiple,StatusRand11 decision;
+    class WriteRawCSV,WriteCleanHistory,Exp1CSV,Exp2CSV,Exp3CSV storage;
+    class Exp1,Exp2,Exp3 experiment;
+    class LoadConfig,MainMenuLoop,GenData,ClearHistory,LoadCSV,SortQueue,SetPQ,InputCall,AddCall,ViewQueue,QueueFormat,ProcNext,SetCompleted5,SetMissed5,SaveHistory5,ViewHistory,SearchHistory,HistFormat,RunAging,BoostScore,ViewCircular,ProcMultiple,SetCompleted11,SetMissed11,SaveHistory11 process;

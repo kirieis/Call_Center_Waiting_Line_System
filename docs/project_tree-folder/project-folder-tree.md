@@ -59,8 +59,12 @@ Call_Center_Waiting_Line_System-Group7/
 │   │   └── 📄 use_case_diagram.drawio   # Use case diagram
 │   │
 │   ├── 📁 diagrams description/         # Diagram descriptions
+│   │   ├── 📄 class_diagram.docx        # Class diagram description docx
+│   │   └── 📄 use_case_diagram.docx     # Use case diagram description docx
 │   │
 │   ├── 📁 others/                       # Other documentation
+│   │
+│   ├── 📄 diagrama                      # Mermaid flowchart code file
 │   │
 │   └── 📁 project_tree-folder/          # Project tree folder
 │       └── 📄 tree-folder.md            # Tree folder markdown

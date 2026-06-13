@@ -230,4 +230,13 @@ public class ConfigLoader {
     public int getMaxRepeatCalls() {
         return getIntProperty("generator.max.repeat.calls", 10);
     }
+
+    /**
+     * Gets the count of calls to process simultaneously.
+     * 
+     * @return count of calls to process
+     */
+    public int getProcessMultipleCount() {
+        return getIntProperty("process.multiple.count", 10);
+    }
 }
