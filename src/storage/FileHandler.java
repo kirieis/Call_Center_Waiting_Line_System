@@ -20,6 +20,7 @@ public class FileHandler {
 
     /**
      * Initializes FileHandler with a file path.
+     * 
      * @param filePath path to the file (relative or absolute)
      */
     public FileHandler(String filePath) {
@@ -47,7 +48,7 @@ public class FileHandler {
                 lines.add(line);
             }
         } catch (IOException e) {
-            System.out.println("  [!] File read error: " + e.getMessage());
+            System.out.println("File read error: " + e.getMessage());
         }
 
         return lines;
@@ -69,7 +70,7 @@ public class FileHandler {
                 writer.newLine();
             }
         } catch (IOException e) {
-            System.out.println("  [!] File write error: " + e.getMessage());
+            System.out.println("File write error: " + e.getMessage());
         }
     }
 
@@ -87,7 +88,7 @@ public class FileHandler {
             writer.write(line);
             writer.newLine();
         } catch (IOException e) {
-            System.out.println("  [!] File append error: " + e.getMessage());
+            System.out.println("File append error: " + e.getMessage());
         }
     }
 

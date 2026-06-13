@@ -28,7 +28,7 @@ project-root/
 │   └── experiment/                   # Các bài thực nghiệm / Stress test thuật toán
 │       ├── Exp1_PriorityQueue.java   # Đo thời gian sắp xếp và xử lý 10,000 cuộc gọi
 │       ├── Exp2_AgingAlgorithm.java  # Kiểm tra thuật toán tăng điểm ưu tiên với số lượng data lớn
-│       └── Exp3_HistoryLookup.java   # Thử nghiệm tìm kiếm trong lịch sử cuộc gọi
+│       └── Exp3_CallbackFairness.java   # Thử nghiệm tính công bằng của Callback
 │
 ├── data/                             # Chứa các dữ liệu lưu trữ
 │   ├── call_history.csv              # Tệp tin lưu lịch sử các cuộc gọi đã phục vụ xong
