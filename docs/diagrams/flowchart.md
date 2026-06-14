@@ -1,3 +1,5 @@
+## https://mermaid.js.org
+
 flowchart TD
     %% 1. Định nghĩa các Styles
     classDef default fill:#f9f9f9,stroke:#333,stroke-width:1px;
