@@ -1,4 +1,4 @@
-# Call_Center_Waiting_Line_System-Group7
+# Call_Center_Waiting_Line_System
 
 # members:
 - Nguyễn Văn An
