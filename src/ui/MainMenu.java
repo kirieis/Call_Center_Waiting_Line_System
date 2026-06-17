@@ -105,7 +105,7 @@ public class MainMenu {
                 "8.  Apply Aging algorithm",
                 "9.  View Circular Queue status",
                 "10. Run experiments",
-                "11. Process multiple calls (" + processMultipleCount + " calls)",
+                "11. Process multiple calls (default: " + processMultipleCount + " calls)",
                 "",
                 "0.  Exit"
         };
