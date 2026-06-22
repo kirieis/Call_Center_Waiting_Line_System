@@ -28,12 +28,17 @@ public class Exp1_PriorityQueue {
     private static final int AGING_INTERVAL_SECONDS = 60; // Tiến hành aging sau mỗi 60 giây
     private static final int AGING_BOOST_POINTS = 15; // Điểm cộng thêm để cạnh tranh công bằng với điểm VIP (50)
 
-    // Lớp wrapper lưu trữ thông tin cuộc gọi phục vụ quá trình mô phỏng timeline
+    /**
+     * LỚP WRAPPER SIMCALL:
+     * - Bao bọc thực thể Call để bổ sung các thuộc tính phục vụ riêng cho môi trường mô phỏng.
+     * - Lưu giữ thời gian cuộc gọi đến (arrivalTime), thời gian đàm thoại của Agent (handlingTime)
+     *   và tính toán thời gian chờ đợi thực tế (waitTime).
+     */
     static class SimCall {
         Call call;
-        int arrivalTime;   // Thời điểm đến (giây vật lý ảo)
-        int handlingTime;  // Thời gian xử lý ngẫu nhiên của Agent (giây)
-        int waitTime = -1; // Kết quả thời gian chờ tính được (giây)
+        int arrivalTime;   // Thời điểm cuộc gọi đến tổng đài (tính bằng giây ảo)
+        int handlingTime;  // Thời lượng đàm thoại mà Agent cần xử lý cuộc gọi (giây)
+        int waitTime = -1; // Kết quả thời gian chờ tính được (giây), mặc định = -1 (chưa xử lý)
 
         SimCall(Call call, int arrivalTime, int handlingTime) {
             this.call = call;
@@ -42,6 +47,15 @@ public class Exp1_PriorityQueue {
         }
     }
 
+    /**
+     * HÀM KHỞI CHẠY THỰC NGHIỆM 1 (run):
+     * - Điều phối toàn bộ vòng đời thực nghiệm 1.
+     * - Bước 1: Sinh tập dữ liệu đồng nhất bằng cách khóa Seed ngẫu nhiên (đảm bảo so sánh công bằng).
+     * - Bước 2: Nhân bản tập dữ liệu để chạy song song 2 kịch bản độc lập.
+     * - Bước 3: Chạy mô phỏng Kịch bản A (Dual Queue).
+     * - Bước 4: Chạy mô phỏng Kịch bản B (Single Queue + Aging).
+     * - Bước 5: Phân tích số liệu và xuất báo cáo so sánh.
+     */
     public void run() {
         System.out.println("\n==================================================================");
         System.out.println("🧪 EXPERIMENT 1: DUAL QUEUE VS SINGLE QUEUE WITH AGING ALGORITHM");
@@ -49,6 +63,7 @@ public class Exp1_PriorityQueue {
 
         // Sinh dữ liệu đồng nhất (Deterministic Input Data) bằng cách khóa Seed ngẫu nhiên
         List<SimCall> datasetA = generateDeterministicDataset(12345);
+        // Nhân bản sâu (deep clone) để Scenario B chạy trên cùng một bộ dữ liệu đầu vào y hệt Scenario A
         List<SimCall> datasetB = cloneDataset(datasetA);
 
         System.out.println("  [i] Running simulation Scenario A (Dual Queue - Absolute VIP)...");
@@ -57,7 +72,7 @@ public class Exp1_PriorityQueue {
         System.out.println("  [i] Running simulation Scenario B (Single Queue + Aging Mechanism)...");
         runSingleQueueAgingSimulation(datasetB);
 
-        // Xuất báo cáo so sánh chi tiết
+        // Xuất báo cáo so sánh chi tiết và lưu kết quả ra file CSV
         printComparativeReport(datasetA, datasetB);
     }
 
@@ -111,21 +126,25 @@ public class Exp1_PriorityQueue {
         return list;
     }
 
+    /**
+     * SAO CHÉP TẬP DỮ LIỆU (cloneDataset):
+     * - Thực hiện nhân bản sâu (deep clone) danh sách SimCall.
+     * - Điều này là bắt buộc vì nếu dùng chung tham chiếu đối tượng Call, kết quả tính toán waitTime
+     *   hoặc điểm ưu tiên của Scenario A sẽ ghi đè và làm sai lệch dữ liệu của Scenario B.
+     */
     private List<SimCall> cloneDataset(List<SimCall> original) {
         List<SimCall> clone = new ArrayList<>();
         for (SimCall sc : original) {
             Call oc = sc.call;
+            // Khởi tạo một đối tượng Call hoàn toàn mới với các thông số sao chép từ Call cũ
             Call nc = new Call(oc.getCustomerId(), oc.getCustomerName(), oc.getPhoneNumber(), oc.isVIP(), oc.getRepeatCalls(), oc.getOrderNumber());
             nc.setPriorityScore(oc.getPriorityScore());
+            // Đóng gói vào đối tượng SimCall mới
             clone.add(new SimCall(nc, sc.arrivalTime, sc.handlingTime));
         }
         return clone;
     }
 
-    /**
-     * KỊCH BẢN A: Khởi tạo 2 hàng đợi hoàn toàn riêng biệt.
-     * Điện thoại viên chỉ lấy cuộc gọi thường khi hàng đợi VIP trống rỗng.
-     */
     /**
      * KỊCH BẢN A: Khởi tạo 2 hàng đợi hoàn toàn riêng biệt (Dual Queue).
      * - Khách VIP xếp vào hàng VIP, khách thường xếp vào hàng thường.
@@ -176,10 +195,6 @@ public class Exp1_PriorityQueue {
         }
     }
 
-    /**
-     * KỊCH BẢN B: Sử dụng 1 hàng đợi ưu tiên duy nhất.
-     * Cứ sau mỗi phút, khách thường chưa được phục vụ sẽ được tăng điểm ưu tiên (Aging).
-     */
     /**
      * KỊCH BẢN B: Sử dụng 1 hàng đợi duy nhất tích hợp cơ chế chống nghẽn (Single Queue + Aging).
      * - Tất cả cuộc gọi (VIP và thường) đều xếp chung vào 1 hàng đợi ưu tiên.
@@ -255,25 +270,48 @@ public class Exp1_PriorityQueue {
         }
     }
 
+    /**
+     * BÁO CÁO KẾT QUẢ SO SÁNH (printComparativeReport):
+     * - Thực hiện tổng hợp số liệu và tính thời gian chờ trung bình (AWT) cho từng nhóm đối tượng.
+     * - Xuất bảng báo cáo định dạng ascii trực quan ra console.
+     * - Ghi dữ liệu kết quả ra file CSV phục vụ phân tích dữ liệu hoặc vẽ biểu đồ.
+     */
     private void printComparativeReport(List<SimCall> datasetA, List<SimCall> datasetB) {
+        // --- 1. Tính toán số liệu cho Kịch bản A (Dual Queue) ---
         double vipAwtA = 0, regAwtA = 0, totalAwtA = 0;
         int vipCount = 0, regCount = 0;
         
         for (SimCall sc : datasetA) {
-            if (sc.call.isVIP()) { vipAwtA += sc.waitTime; vipCount++; }
-            else { regAwtA += sc.waitTime; regCount++; }
+            if (sc.call.isVIP()) { 
+                vipAwtA += sc.waitTime; 
+                vipCount++; 
+            } else { 
+                regAwtA += sc.waitTime; 
+                regCount++; 
+            }
             totalAwtA += sc.waitTime;
         }
-        vipAwtA /= vipCount; regAwtA /= regCount; totalAwtA /= datasetA.size();
+        // Tính trung bình (AWT = tổng thời gian chờ / số lượng cuộc gọi)
+        vipAwtA /= vipCount; 
+        regAwtA /= regCount; 
+        totalAwtA /= datasetA.size();
 
+        // --- 2. Tính toán số liệu cho Kịch bản B (Single Queue + Aging) ---
         double vipAwtB = 0, regAwtB = 0, totalAwtB = 0;
         for (SimCall sc : datasetB) {
-            if (sc.call.isVIP()) vipAwtB += sc.waitTime;
-            else regAwtB += sc.waitTime;
+            if (sc.call.isVIP()) {
+                vipAwtB += sc.waitTime;
+            } else {
+                regAwtB += sc.waitTime;
+            }
             totalAwtB += sc.waitTime;
         }
-        vipAwtB /= vipCount; regAwtB /= regCount; totalAwtB /= datasetB.size();
+        // Tính trung bình cho kịch bản B
+        vipAwtB /= vipCount; 
+        regAwtB /= regCount; 
+        totalAwtB /= datasetB.size();
 
+        // In bảng so sánh trực quan
         System.out.println("\n📊 AVERAGE WAIT TIME (AWT) COMPARISON TABLE");
         System.out.println("┌──────────────────────────┬──────────────────────────┬──────────────────────────┐");
         System.out.println("│ Customer Classification  │ Scenario A (Dual Queue)  │ Scenario B (Aging Queue) │");
@@ -283,7 +321,7 @@ public class Exp1_PriorityQueue {
         System.out.printf("│ OVERALL SYSTEM           │       %8.2f seconds    │       %8.2f seconds    │%n", totalAwtA, totalAwtB);
         System.out.println("└──────────────────────────┴──────────────────────────┴──────────────────────────┘");
         
-        // Ghi kết quả so sánh ra file CSV
+        // --- 3. Ghi kết quả so sánh ra file CSV để lưu trữ lâu dài ---
         try {
             config.ConfigLoader loader = new config.ConfigLoader();
             String csvPath = loader.resolvePath("data/Exp1_PriorityQueue.csv");
@@ -299,6 +337,7 @@ public class Exp1_PriorityQueue {
             System.err.println("  [!] Failed to write CSV file: " + e.getMessage());
         }
 
+        // --- 4. Đưa ra kết luận chuyên môn dựa trên số liệu ---
         System.out.println("\n💡 EXPERIMENT 1 CONCLUSION:");
         if (regAwtB < regAwtA) {
             System.out.println("  [✓] Scenario B (Single Queue + Aging) is significantly more optimal for regular customers.");
