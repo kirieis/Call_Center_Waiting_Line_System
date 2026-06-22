@@ -1,4 +1,4 @@
 Customer Classification,Scenario A (Dual Queue) (seconds),Scenario B (Aging Queue) (seconds)
-Regular Customer,43321.20,26623.69
-VIP Customer,1388.58,67921.24
-OVERALL SYSTEM,34947.15,34870.92
+Regular Customer,356192.25,235281.13
+VIP Customer,53374.81,536766.20
+OVERALL SYSTEM,295940.01,295268.26

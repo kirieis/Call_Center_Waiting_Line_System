@@ -13,8 +13,18 @@ import java.util.*;
 public class Exp1_PriorityQueue {
 
     private static final int NUM_AGENTS = 5; // Số điện thoại viên cố định
-    private static final int SIM_DURATION_SECONDS = 4 * 3600; // Mô phỏng chạy trong 4 tiếng (giây)
-    private static final double CALL_RATE_PER_SECOND = 500.0 / 3600.0; // ~8.33 cuộc gọi/phút
+    private static final int SIM_DURATION_SECONDS = 4 * 3600; // Mô phỏng chạy trong 4 tiếng (14,400 giây)
+    
+    /**
+     * TỐC ĐỘ CUỘC GỌI MỖI GIÂY (CALL_RATE_PER_SECOND):
+     * - Yêu cầu bài toán: Mô phỏng 500 cuộc gọi/giờ.
+     * - Quy đổi: 1 giờ = 3600 giây.
+     * - Do đó, tốc độ cuộc gọi mỗi giây (lambda trong phân phối Poisson) = 500.0 / 3600.0 ≈ 0.1389 cuộc gọi/giây.
+     * - Quy đổi ra phút: 0.1389 * 60 ≈ 8.33 cuộc gọi/phút.
+     * - Đây chính là nơi định nghĩa con số "500 cuộc gọi/giờ" để đưa vào mô phỏng.
+     */
+    private static final double CALL_RATE_PER_SECOND = 500.0/3600.0; 
+    
     private static final int AGING_INTERVAL_SECONDS = 60; // Tiến hành aging sau mỗi 60 giây
     private static final int AGING_BOOST_POINTS = 15; // Điểm cộng thêm để cạnh tranh công bằng với điểm VIP (50)
 
@@ -61,18 +71,36 @@ public class Exp1_PriorityQueue {
         int orderCounter = 1;
 
         while (currentTime < SIM_DURATION_SECONDS) {
+            // sinh số ngẫu nhiên u trong khoảng (0, 1]
             double u = rand.nextDouble();
             while (u == 0) u = rand.nextDouble();
-            // Công thức tính thời gian cuộc gọi kế tiếp đến dựa trên mật độ lưu lượng mong muốn
+            
+            /**
+             * MÔ PHỎNG QUÁ TRÌNH POISSON (POISSON PROCESS):
+             * - Trong thực tế, các cuộc gọi đến Call Center là các sự kiện ngẫu nhiên độc lập.
+             * - Do đó, khoảng thời gian giữa 2 cuộc gọi liên tiếp (Inter-arrival time) tuân theo phân phối mũ (Exponential Distribution).
+             * - Công thức nghịch đảo hàm mật độ tích lũy: nextArrivalInterval = -ln(1 - u) / lambda.
+             * - Ở đây lambda = CALL_RATE_PER_SECOND (được tính từ 500 cuộc gọi / 3600 giây).
+             * - Kết quả nextArrivalInterval là số giây ngẫu nhiên cho đến cuộc gọi tiếp theo.
+             */
             int nextArrivalInterval = (int) (-Math.log(1 - u) / CALL_RATE_PER_SECOND);
-            if (nextArrivalInterval < 1) nextArrivalInterval = 1;
+            if (nextArrivalInterval < 1) nextArrivalInterval = 1; // Đảm bảo khoảng cách tối thiểu 1 giây
             currentTime += nextArrivalInterval;
 
             if (currentTime >= SIM_DURATION_SECONDS) break;
 
-            boolean isVip = rand.nextDouble() < 0.20; // Tỷ lệ VIP đúng 20%
+            /**
+             * THIẾT LẬP TỶ LỆ KHÁCH HÀNG VIP:
+             * - Yêu cầu bài toán: Tỷ lệ VIP chiếm 20%.
+             * - Sử dụng rand.nextDouble() < 0.20 để gán nhãn VIP với xác suất chính xác là 20%.
+             */
+            boolean isVip = rand.nextDouble() < 0.20; 
+            
+            // 15% khách hàng có lịch sử cuộc gọi lặp lại (từ 1 đến 3 cuộc gọi trước đó)
             int repeatCalls = rand.nextInt(100) < 15 ? rand.nextInt(3) + 1 : 0; 
-            int handlingTime = (rand.nextInt(4) + 2) * 60; // Ngẫu nhiên từ 2 đến 5 phút (đổi ra giây)
+            
+            // Thời gian xử lý cuộc gọi ngẫu nhiên của điện thoại viên từ 2 đến 5 phút (quy ra giây: 120s - 300s)
+            int handlingTime = (rand.nextInt(4) + 2) * 60; 
 
             String id = "C" + String.format("%04d", orderCounter);
             Call call = new Call(id, "Customer " + id, "090" + String.format("%07d", rand.nextInt(10000000)), isVip, repeatCalls, orderCounter);
@@ -98,18 +126,26 @@ public class Exp1_PriorityQueue {
      * KỊCH BẢN A: Khởi tạo 2 hàng đợi hoàn toàn riêng biệt.
      * Điện thoại viên chỉ lấy cuộc gọi thường khi hàng đợi VIP trống rỗng.
      */
+    /**
+     * KỊCH BẢN A: Khởi tạo 2 hàng đợi hoàn toàn riêng biệt (Dual Queue).
+     * - Khách VIP xếp vào hàng VIP, khách thường xếp vào hàng thường.
+     * - Điện thoại viên (Agent) CHỈ lấy cuộc gọi từ hàng đợi thường khi hàng đợi VIP hoàn toàn trống.
+     * - Phân tích: Kịch bản này ưu tiên tuyệt đối cho khách VIP (Absolute VIP). Tuy nhiên,
+     *   khi hệ thống quá tải (500 cuộc gọi/giờ so với công suất phục vụ giới hạn của 5 Agents),
+     *   khách thường sẽ bị bỏ rơi (Resource Starvation) dẫn đến thời gian chờ cực kỳ khủng khiếp.
+     */
     private void runDualQueueSimulation(List<SimCall> dataset) {
-        int[] agentFreeTime = new int[NUM_AGENTS];
-        List<SimCall> vipQueue = new ArrayList<>();
-        List<SimCall> regularQueue = new ArrayList<>();
+        int[] agentFreeTime = new int[NUM_AGENTS]; // Lưu thời điểm rảnh của các Agent (giây)
+        List<SimCall> vipQueue = new ArrayList<>(); // Hàng đợi riêng biệt cho VIP
+        List<SimCall> regularQueue = new ArrayList<>(); // Hàng đợi riêng biệt cho khách thường
         
         int callIndex = 0;
         int totalCalls = dataset.size();
         int processedCount = 0;
-        int t = 0;
+        int t = 0; // Biến đếm thời gian thực mô phỏng (giây)
 
         while (processedCount < totalCalls) {
-            // Đưa cuộc gọi vào hàng đợi tương ứng khi đến mốc thời gian xuất hiện
+            // Khi đến giây t, nếu có cuộc gọi mới đến Call Center thì đưa vào hàng đợi tương ứng
             while (callIndex < totalCalls && dataset.get(callIndex).arrivalTime <= t) {
                 SimCall sc = dataset.get(callIndex);
                 if (sc.call.isVIP()) vipQueue.add(sc);
@@ -117,30 +153,47 @@ public class Exp1_PriorityQueue {
                 callIndex++;
             }
 
-            // Phân phối cuộc gọi cho các Agent đang rảnh tay
+            // Quét qua các Agent để xem có ai đang rảnh tay ở giây t không
             for (int i = 0; i < NUM_AGENTS; i++) {
                 if (agentFreeTime[i] <= t) {
                     SimCall nextCall = null;
+                    
+                    // Nguyên tắc phân phối: VIP luôn luôn trước
                     if (!vipQueue.isEmpty()) {
-                        nextCall = vipQueue.remove(0); // Lấy khách VIP trước
+                        nextCall = vipQueue.remove(0); // Lấy khách VIP đứng đầu hàng
                     } else if (!regularQueue.isEmpty()) {
-                        nextCall = regularQueue.remove(0); // Không có VIP mới xử lý khách thường
+                        nextCall = regularQueue.remove(0); // Khi hàng VIP trống mới xét tới khách thường
                     }
 
                     if (nextCall != null) {
-                        nextCall.waitTime = t - nextCall.arrivalTime;
-                        agentFreeTime[i] = t + nextCall.handlingTime;
+                        nextCall.waitTime = t - nextCall.arrivalTime; // Tính thời gian chờ (giây)
+                        agentFreeTime[i] = t + nextCall.handlingTime; // Đặt thời điểm rảnh tiếp theo của Agent này
                         processedCount++;
                     }
                 }
             }
-            t++;
+            t++; // Tăng thời gian mô phỏng thêm 1 giây
         }
     }
 
     /**
      * KỊCH BẢN B: Sử dụng 1 hàng đợi ưu tiên duy nhất.
      * Cứ sau mỗi phút, khách thường chưa được phục vụ sẽ được tăng điểm ưu tiên (Aging).
+     */
+    /**
+     * KỊCH BẢN B: Sử dụng 1 hàng đợi duy nhất tích hợp cơ chế chống nghẽn (Single Queue + Aging).
+     * - Tất cả cuộc gọi (VIP và thường) đều xếp chung vào 1 hàng đợi ưu tiên.
+     * - Điểm ưu tiên cơ bản (Base Priority): VIP mặc định được +50 điểm. Khách thường bắt đầu với 0 điểm (hoặc +10/mỗi cuộc gọi lặp lại).
+     * - Cơ chế Tăng tuổi (Aging Mechanism): Cứ sau mỗi AGING_INTERVAL_SECONDS (60 giây), những khách thường đang chờ
+     *   sẽ được cộng thêm AGING_BOOST_POINTS (15 điểm) vào điểm ưu tiên.
+     * - Phân tích:
+     *   + Sau 1 phút chờ: Điểm khách thường tăng lên 15.
+     *   + Sau 2 phút chờ: Điểm tăng lên 30.
+     *   + Sau 3 phút chờ: Điểm tăng lên 45.
+     *   + Sau 3.33 phút chờ (200 giây): Điểm tăng lên 50 (bằng điểm VIP mới đến).
+     *   + Sau 4 phút chờ: Điểm tăng lên 60 (vượt qua điểm VIP mới đến).
+     *   + Do đó, khách thường chờ lâu chắc chắn sẽ được phục vụ trước khách VIP vừa mới đến.
+     *   Điều này giúp rút ngắn đáng kể thời gian chờ của khách thường và giải quyết triệt để nạn nghẽn hàng đợi (Resource Starvation).
      */
     private void runSingleQueueAgingSimulation(List<SimCall> dataset) {
         int[] agentFreeTime = new int[NUM_AGENTS];
@@ -152,6 +205,7 @@ public class Exp1_PriorityQueue {
         int t = 0;
 
         while (processedCount < totalCalls) {
+            // Khi đến giây t, đưa các cuộc gọi mới xuất hiện vào hàng đợi chung
             while (callIndex < totalCalls && dataset.get(callIndex).arrivalTime <= t) {
                 priorityQueue.add(dataset.get(callIndex));
                 callIndex++;
@@ -162,24 +216,28 @@ public class Exp1_PriorityQueue {
                 for (SimCall sc : priorityQueue) {
                     if (!sc.call.isVIP()) {
                         // Tăng biến waitTime nội tại để nâng điểm getAgedPriority() lên
+                        // Mỗi lần tăng thêm AGING_BOOST_POINTS (15 điểm) sau mỗi phút
                         sc.call.setWaitTime(sc.call.getWaitTime() + AGING_BOOST_POINTS);
                     }
                 }
             }
 
-            // Phân phối cuộc gọi dựa trên tổng điểm Priority Score (Đã cộng dồn điểm Aging)
+            // Phân phối cuộc gọi cho Agent rảnh tay
             for (int i = 0; i < NUM_AGENTS; i++) {
                 if (agentFreeTime[i] <= t) {
                     if (!priorityQueue.isEmpty()) {
                         int highestPriorityIndex = 0;
+                        
+                        // Tìm cuộc gọi có tổng điểm ưu tiên cao nhất trong hàng đợi ở giây t
                         for (int j = 1; j < priorityQueue.size(); j++) {
+                            // Tổng điểm = Base Priority Score + Điểm Aging (waitTime đã được boost)
                             int p1 = priorityQueue.get(j).call.getPriorityScore() + priorityQueue.get(j).call.getWaitTime();
                             int p2 = priorityQueue.get(highestPriorityIndex).call.getPriorityScore() + priorityQueue.get(highestPriorityIndex).call.getWaitTime();
                              
                             if (p1 > p2) {
                                 highestPriorityIndex = j;
                             } else if (p1 == p2) {
-                                // Nếu bằng điểm nhau, ai đến trước xếp trước (FIFO trích xuất)
+                                // Nếu bằng điểm nhau, áp dụng nguyên tắc FIFO (ai đến trước phục vụ trước)
                                 if (priorityQueue.get(j).arrivalTime < priorityQueue.get(highestPriorityIndex).arrivalTime) {
                                     highestPriorityIndex = j;
                                 }
@@ -187,7 +245,7 @@ public class Exp1_PriorityQueue {
                         }
 
                         SimCall nextCall = priorityQueue.remove(highestPriorityIndex);
-                        nextCall.waitTime = t - nextCall.arrivalTime;
+                        nextCall.waitTime = t - nextCall.arrivalTime; // Tính thời gian chờ thực tế từ khi đến
                         agentFreeTime[i] = t + nextCall.handlingTime;
                         processedCount++;
                     }
