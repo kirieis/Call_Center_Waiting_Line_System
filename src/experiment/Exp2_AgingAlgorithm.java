@@ -185,9 +185,9 @@ public class Exp2_AgingAlgorithm {
         System.out.println("┌───────────────────────────┬─────────────────────┬─────────────────────┐");
         System.out.println("│ Simulation Phase          │ Regular Cust Max WT │ VIP Customer Max WT │");
         System.out.println("├───────────────────────────┼─────────────────────┼─────────────────────┤");
-        System.out.printf("│ Block 1 (00-15m: VIP 20%%) │     %4d seconds    │     %4d seconds    │%n", maxWtReg[1], maxWtVip[1]);
-        System.out.printf("│ Block 2 (15-30m: VIP 50%%) │     %4d seconds    │     %4d seconds    │%n", maxWtReg[2], maxWtVip[2]);
-        System.out.printf("│ Block 3 (30-60m: VIP 20%%) │     %4d seconds    │     %4d seconds    │%n", maxWtReg[3], maxWtVip[3]);
+        System.out.printf("│ Block 1 (00-15m: VIP 20%%) │     %d seconds    │     %d seconds    │%n", maxWtReg[1], maxWtVip[1]);
+        System.out.printf("│ Block 2 (15-30m: VIP 50%%) │     %d seconds    │     %d seconds    │%n", maxWtReg[2], maxWtVip[2]);
+        System.out.printf("│ Block 3 (30-60m: VIP 20%%) │     %d seconds    │     %d seconds    │%n", maxWtReg[3], maxWtVip[3]);
         System.out.println("└───────────────────────────┴─────────────────────┴─────────────────────┘");
 
         // Ghi kết quả so sánh ra file CSV
