@@ -54,13 +54,19 @@ public class Exp2_AgingAlgorithm {
             int blockId;
             double vipRate;
 
-            // Thiết lập kịch bản biến động luồng traffic theo yêu cầu đề bài
+            /**
+             * MÔ PHỎNG ĐỘT BIẾN LƯU LƯỢNG VIP (SPIKE PEAK TRAFFIC):
+             * Chia thời gian 60 phút mô phỏng thành 3 giai đoạn (Block):
+             * - Block 1 (Phút 0 - 14): Mức VIP bình thường là 20%.
+             * - Block 2 (Phút 15 - 29): Đột biến VIP vọt lên 50% trong 15 phút (Yêu cầu đề bài).
+             * - Block 3 (Phút 30 - 59): Lưu lượng VIP quay về mức bình thường 20% để hạ nhiệt hệ thống.
+             */
             if (minute < 15) {
-                blockId = 1; vipRate = 0.20; // 15 phút đầu: Bình thường
+                blockId = 1; vipRate = 0.20; 
             } else if (minute < 30) {
-                blockId = 2; vipRate = 0.50; // Phút 15 - 30: Đột biến VIP vọt lên 50%
+                blockId = 2; vipRate = 0.50; 
             } else {
-                blockId = 3; vipRate = 0.20; // 30 phút cuối: Hạ nhiệt
+                blockId = 3; vipRate = 0.20; 
             }
 
             for (int k = 0; k < CALLS_PER_MINUTE; k++) {
@@ -91,33 +97,41 @@ public class Exp2_AgingAlgorithm {
         int processedCount = 0;
         int t = 0;
 
-        // Đồng bộ tham số cấu hình thuật toán của nhóm từ settings.properties
-        int agingThresholdSeconds = 30; // 30.000 ms = 30 giây
-        int agingBoostScore = 5;
+        // Thiết lập các thông số cấu hình của thuật toán Aging
+        int agingThresholdSeconds = 30; // Chờ quá 30 giây ảo sẽ bắt đầu được xét tăng điểm ưu tiên
+        int agingBoostScore = 5;       // Mỗi lần tăng điểm ưu tiên thêm 5 điểm
 
         while (processedCount < totalCalls || !internalQueue.isEmpty()) {
-            // Nạp các cuộc gọi vừa đến vào hàng đợi ảo
+            // Đưa các cuộc gọi mới xuất hiện ở giây t vào hàng đợi
             while (callIndex < totalCalls && dataset.get(callIndex).arrivalTime <= t) {
                 internalQueue.add(dataset.get(callIndex));
                 callIndex++;
             }
 
-            // Quét và thực thi luật Aging định kỳ sau mỗi 10 giây cho toàn hàng đợi
+            /**
+             * CƠ CHẾ TĂNG TUỔI (AGING ALGORITHM):
+             * - Thực hiện định kỳ mỗi 10 giây ảo.
+             * - Duyệt qua tất cả các cuộc gọi đang chờ trong hàng đợi ảo.
+             * - Nếu cuộc gọi đã chờ lớn hơn hoặc bằng agingThresholdSeconds (30 giây),
+             *   ta cộng thêm agingBoostScore (5 điểm) vào thời gian chờ tích luỹ của cuộc gọi.
+             * - Điều này giúp đẩy điểm ưu tiên tổng hợp (Priority Score + waitTime) tăng dần tuyến tính theo thời gian.
+             */
             if (t > 0 && t % 10 == 0) {
                 for (TimeSeriesCall tsc : internalQueue) {
                     int currentWaitTime = t - tsc.arrivalTime;
                     if (currentWaitTime >= agingThresholdSeconds) {
-                        // Gọi hàm kích hoạt cơ chế tăng điểm ưu tiên nội tại
                         tsc.call.setWaitTime(tsc.call.getWaitTime() + agingBoostScore);
                     }
                 }
             }
 
-            // Định tuyến chuyển giao Agent tiếp nhận cuộc gọi có mức ưu tiên cao nhất
+            // Định tuyến điều phối cuộc gọi cho Agent rảnh tay
             for (int i = 0; i < NUM_AGENTS; i++) {
                 if (agentFreeTime[i] <= t) {
                     if (!internalQueue.isEmpty()) {
                         int bestTargetIdx = 0;
+                        
+                        // Tìm cuộc gọi có tổng điểm ưu tiên lớn nhất trong hàng đợi
                         for (int j = 1; j < internalQueue.size(); j++) {
                             int p1 = internalQueue.get(j).call.getPriorityScore() + internalQueue.get(j).call.getWaitTime();
                             int p2 = internalQueue.get(bestTargetIdx).call.getPriorityScore() + internalQueue.get(bestTargetIdx).call.getWaitTime();
@@ -125,6 +139,7 @@ public class Exp2_AgingAlgorithm {
                             if (p1 > p2) {
                                 bestTargetIdx = j;
                             } else if (p1 == p2) {
+                                // Nếu bằng điểm, ưu tiên FIFO (ai đến trước phục vụ trước)
                                 if (internalQueue.get(j).arrivalTime < internalQueue.get(bestTargetIdx).arrivalTime) {
                                     bestTargetIdx = j;
                                 }
@@ -132,14 +147,14 @@ public class Exp2_AgingAlgorithm {
                         }
 
                         TimeSeriesCall executionCall = internalQueue.remove(bestTargetIdx);
-                        executionCall.waitTime = t - executionCall.arrivalTime;
+                        executionCall.waitTime = t - executionCall.arrivalTime; // Ghi nhận thời gian chờ thực tế
                         agentFreeTime[i] = t + executionCall.handlingTime;
                         processedCount++;
                     }
                 }
             }
             t++;
-            if (t > 3600 * 3) break; // Khóa điều kiện an toàn chống vòng lặp vô hạn
+            if (t > 3600 * 3) break; // Khóa bảo vệ an toàn chống lặp vô chậm/vô tận
         }
     }
 
@@ -196,7 +211,14 @@ public class Exp2_AgingAlgorithm {
                 maxWtReg[2], (maxWtReg[2] / 60.0));
         System.out.println("  - Thanks to the Aging algorithm, the accumulated score of regular customers increases linearly to fill the gap.");
         
-        // Ngưỡng thời gian tới hạn (Critical Threshold) quy ước: 10 phút = 600 giây
+        /**
+         * ĐÁNH GIÁ SỰ ĐÓI TÀI NGUYÊN (RESOURCE STARVATION):
+         * - Quy ước ngưỡng thời gian tới hạn của tổng đài là 10 phút (600 giây).
+         * - Nếu thời gian chờ tối đa lớn hơn 600 giây, starvation vẫn xuất hiện do tốc độ tích lũy backlog quá nhanh
+         *   khi có đột biến VIP 50% và hệ thống bị quá tải nặng nề (8 cuộc gọi/phút đổ vào 3 agents).
+         * - Vì vậy, cơ chế Aging mặc dù có làm giảm thời gian chờ so với không có Aging, nhưng KHÔNG THỂ loại bỏ hoàn toàn
+         *   sự quá tải cục bộ khi lưu lượng VIP bùng nổ lên 50% trong 15 phút.
+         */
         if (maxWtReg[2] <= 600) {
             System.out.println("  [✓] CONCLUSION: Resource Starvation HAS BEEN COMPLETELY ELIMINATED.");
             System.out.println("      The intelligent boosting mechanism ensures no regular calls are held beyond");

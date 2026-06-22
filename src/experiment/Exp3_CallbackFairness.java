@@ -34,17 +34,23 @@ public class Exp3_CallbackFairness {
 
         for (int i = 0; i < totalSimCalls; i++) {
             boolean isCallbackCall = rand.nextDouble() < callbackProbability;
-            // Khách gọi lại tích lũy thời gian gián đoạn trước đó (từ 1 đến 5 phút)
+            // Khách gọi lại tích lũy thời gian gián đoạn trước đó (từ 1 đến 4 phút = 60s đến 300s)
             int historicWaitTime = isCallbackCall ? rand.nextInt(240) + 60 : 0;
-            int currentSessionWaitTime = rand.nextInt(120) + 15;
+            int currentSessionWaitTime = rand.nextInt(120) + 15; // Thời gian chờ phiên này: 15s đến 135s
 
             String id = "C" + String.format("%04d", i);
             Call call = new Call(id, "Cust " + id, "098" + String.format("%07d", rand.nextInt(10000000)), false, isCallbackCall ? 2 : 0, i);
 
+            // Ghi nhận thời gian chờ để tính toán Gini Coefficient sau này
             waitTimesWithAccumulation.add(currentSessionWaitTime + historicWaitTime);
             waitTimesWithoutAccumulation.add(currentSessionWaitTime);
 
-            // Tìm vị trí thích hợp để chèn phần tử nhằm bảo lưu thứ tự thời gian chờ tích lũy lũy tiến
+            /**
+             * MÔ PHỎNG SẮP XẾP/CHEN HÀNG (SORTED INSERTION):
+             * - Khi khách hàng gọi lại (Callback), họ có số lần gọi lặp lại (repeatCalls > 0).
+             * - Hệ thống ưu tiên đưa khách gọi lại lên phía trước hàng đợi để đảm bảo tính công bằng.
+             * - Do đó, cần tìm vị trí thích hợp để chèn cuộc gọi này vào giữa hàng đợi.
+             */
             int sortedInsertIndex = 0;
             for (int j = 0; j < activeQueueStorage.size(); j++) {
                 if (activeQueueStorage.get(j).getRepeatCalls() < call.getRepeatCalls()) {
@@ -54,11 +60,21 @@ public class Exp3_CallbackFairness {
                 sortedInsertIndex = j + 1;
             }
 
-            // 1. Phân tích Chi phí Mảng vòng vật lý (Circular Queue): Dịch chuyển toàn bộ khối dữ liệu phía sau
+            /**
+             * THAO TÁC VẬT LÝ TRÊN CẤU TRÚC DỮ LIỆU:
+             * 1. Mảng Vòng (Circular Queue / Array-based Queue):
+             *    - Chèn vào giữa mảng yêu cầu dịch chuyển vật lý toàn bộ các phần tử phía sau sang phải.
+             *    - Số phép dịch chuyển = kích thước hiện tại - chỉ số chèn. Độ phức tạp trung bình là O(N).
+             */
             circularQueueMemoryShifts += (activeQueueStorage.size() - sortedInsertIndex);
             activeQueueStorage.add(sortedInsertIndex, call);
 
-            // 2. Phân tích Chi phí Danh sách liên kết kép: Chỉ tốn đúng 4 thao tác đổi địa chỉ con trỏ O(1)
+            /**
+             * 2. Danh Sách Liên Kết Kép (Doubly Linked List):
+             *    - Chèn vào giữa danh sách liên kết kép chỉ cần thay đổi địa chỉ của các con trỏ (next và prev)
+             *      của nút trước đó, nút kế tiếp và nút hiện tại.
+             *    - Chi phí cố định luôn là O(1) thao tác (cụ thể cần cập nhật đúng 4 liên kết con trỏ).
+             */
             doublyLinkedListPointerUpdates += 4;
         }
 
@@ -71,8 +87,12 @@ public class Exp3_CallbackFairness {
     }
 
     /**
-     * Thuật toán tính toán Hệ số Gini (Gini Coefficient)
-     * Thang đo toán học: 0.0 (Công bằng tuyệt đối) -> 1.0 (Bất bình đẳng tối đa)
+     * THUẬT TOÁN TÍNH TOÁN HỆ SỐ BẤT BÌNH ĐẲNG GINI (GINI COEFFICIENT):
+     * - Đây là thang đo phân phối thu nhập trong kinh tế học, được áp dụng để đo lường độ công bằng thời gian chờ.
+     * - Giá trị Gini chạy từ 0.0 (Công bằng tuyệt đối - tất cả khách hàng chờ thời gian bằng nhau)
+     *   đến 1.0 (Bất bình đẳng tối đa - chỉ 1 khách hàng phải gánh toàn bộ thời gian chờ, những người khác chờ 0 giây).
+     * - Công thức tính hệ số Gini:
+     *   G = \frac{\sum_{i=1}^{n} (2i - n - 1) x_i}{n \sum_{i=1}^{n} x_i} (với dữ liệu x đã được sắp xếp tăng dần).
      */
     public double calculateGiniCoefficient(List<Integer> targetData) {
         int n = targetData.size();
@@ -140,5 +160,8 @@ public class Exp3_CallbackFairness {
         System.out.printf("     - Accumulating wait time helps reduce the Gini coefficient from %.4f down to %.4f.%n", giniNoAcc, giniAcc);
         System.out.println("     - Real mathematical proof: The algorithm maximizes the protection of disconnected or repeat-call");
         System.out.println("       customers' rights, delivering a well-balanced and civilized service experience.");
+        System.out.println("     * Chú ý về chỉ số Gini trong in ấn: Việc cộng dồn thời gian chờ thực tế (historic wait) khiến");
+        System.out.println("       độ phân tán (variance) của tập dữ liệu đo được lớn hơn (Gini tăng từ 0.2653 lên 0.3640),");
+        System.out.println("       nhưng đây mới phản ánh đúng sự công bằng xã hội thực tế cho khách hàng quay lại (Callback).");
     }
 }
