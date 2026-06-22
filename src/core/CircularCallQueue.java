@@ -112,6 +112,47 @@ public class CircularCallQueue implements StandardQueue<Call> {
     }
 
     /**
+     * Removes a specific call from the circular queue and shifts subsequent elements.
+     * Used when a call is dequeued from the priority queue so it is no longer waiting.
+     */
+    public void remove(Call call) {
+        if (isEmpty() || call == null) {
+            return;
+        }
+
+        int index = front;
+        boolean found = false;
+        int distance = -1; // distance from front
+
+        for (int i = 0; i < count; i++) {
+            if (elements[index] != null && elements[index].getCustomerId().equals(call.getCustomerId())) {
+                found = true;
+                distance = i;
+                break;
+            }
+            index = (index + 1) % capacity;
+        }
+
+        if (!found) {
+            return;
+        }
+
+        // Shift elements to fill the gap left by the removed element.
+        // We shift elements from (index + 1) back to index.
+        int current = index;
+        for (int i = distance; i < count - 1; i++) {
+            int next = (current + 1) % capacity;
+            elements[current] = elements[next];
+            current = next;
+        }
+
+        // Clear the last element (which is now a duplicate)
+        elements[current] = null;
+        rear = (rear - 1 + capacity) % capacity;
+        count--;
+    }
+
+    /**
      * Converts circular queue elements to a List (in FIFO order).
      */
     @Override

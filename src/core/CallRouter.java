@@ -71,7 +71,21 @@ public class CallRouter {
         }
         Call call = priorityQueue.dequeue();
         call.setStatus(CallStatus.PROCESSING);
+        circularQueue.remove(call);
         return call;
+    }
+
+    /**
+     * Increments the wait time of all currently waiting calls in the priority queue
+     * and rebuilds the heap to update their priorities.
+     * 
+     * @param ms elapsed time in milliseconds to add to waitTime of each call
+     */
+    public void incrementWaitingCallsWaitTime(int ms) {
+        for (Call call : priorityQueue.getInternalList()) {
+            call.incrementWaitTime(ms);
+        }
+        priorityQueue.rebuildHeap();
     }
 
     /**

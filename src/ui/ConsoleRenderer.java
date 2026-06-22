@@ -15,8 +15,8 @@ import java.util.List;
 public class ConsoleRenderer {
 
     private static final int PAGE_SIZE = 20;
-    private static final String LINE_SEPARATOR = "═══════════════════════════════════════════════════════════════════════════════════════════════════";
-    private static final String THIN_SEPARATOR = "───────────────────────────────────────────────────────────────────────────────────────────────────";
+    private static final String LINE_SEPARATOR = "══════════════════════════════════════════════════════════════════════════════════════════════════════════";
+    private static final String THIN_SEPARATOR = "──────────────────────────────────────────────────────────────────────────────────────────────────────────";
 
     /**
      * Displays call list in a table, with pagination and custom VIP formatting.
@@ -33,8 +33,8 @@ public class ConsoleRenderer {
 
         System.out.println();
         System.out.println("  " + LINE_SEPARATOR);
-        System.out.printf("  ║ %-5s │ %-8s │ %-22s │ %-12s │ %-5s │ %-7s │ %-7s │ %-10s ║%n",
-                "No.", "Cust ID", "Cust Name", "Phone", "VIP", "Repeats", "Score", "Status");
+        System.out.printf("  ║ %-5s │ %-8s │ %-22s │ %-12s │ %-5s │ %-7s │ %-9s │ %-7s │ %-10s ║%n",
+                "No.", "Cust ID", "Cust Name", "Phone", "VIP", "Repeats", "Wait Time", "Score", "Status");
         System.out.println("  " + LINE_SEPARATOR);
 
         for (int i = 0; i < calls.size(); i++) {
@@ -48,13 +48,14 @@ public class ConsoleRenderer {
                 vipStr = call.isVIP() ? " ★" : " -";
             }
 
-            System.out.printf("  ║ %-5d │ %-8s │ %-22s │ %-12s │ %-5s │ %-7d │ %-7d │ %-10s ║%n",
+            System.out.printf("  ║ %-5d │ %-8s │ %-22s │ %-12s │ %-5s │ %-7d │ %-9s │ %-7d │ %-10s ║%n",
                     (i + 1),
                     truncate(call.getCustomerId(), 8),
                     truncate(call.getCustomerName(), 22),
                     call.getPhoneNumber(),
                     vipStr,
                     call.getRepeatCalls(),
+                    call.getWaitTime() + " ms",
                     call.getAgedPriority(),
                     call.getStatus());
 
@@ -93,13 +94,14 @@ public class ConsoleRenderer {
         System.out.println("  ╔═══════════════════════════════════╗");
         System.out.println("  ║          CALL DETAILS             ║");
         System.out.println("  ╠═══════════════════════════════════╣");
-        System.out.printf("  ║  Cust ID  : %-20s  ║%n", call.getCustomerId());
-        System.out.printf("  ║  Cust Name: %-20s  ║%n", truncate(call.getCustomerName(), 20));
-        System.out.printf("  ║  Phone    : %-20s  ║%n", call.getPhoneNumber());
-        System.out.printf("  ║  VIP      : %-20s  ║%n", call.isVIP() ? "★ Yes" : "- No");
-        System.out.printf("  ║  Repeats  : %-20d  ║%n", call.getRepeatCalls());
-        System.out.printf("  ║  Priority : %-20d  ║%n", call.getAgedPriority());
-        System.out.printf("  ║  Status   : %-19s  ║%n", call.getStatus());
+        System.out.printf("  ║  Cust ID  : %-19s ║%n", call.getCustomerId());
+        System.out.printf("  ║  Cust Name: %-19s ║%n", truncate(call.getCustomerName(), 19));
+        System.out.printf("  ║  Phone    : %-19s ║%n", call.getPhoneNumber());
+        System.out.printf("  ║  VIP      : %-19s ║%n", call.isVIP() ? "Yes" : "No");
+        System.out.printf("  ║  Repeats  : %-19d ║%n", call.getRepeatCalls());
+        System.out.printf("  ║  Wait Time: %-19s ║%n", call.getWaitTime() + " ms");
+        System.out.printf("  ║  Priority : %-19d ║%n", call.getAgedPriority());
+        System.out.printf("  ║  Status   : %-19s ║%n", call.getStatus());
         System.out.println("  ╚═══════════════════════════════════╝");
         System.out.println();
     }

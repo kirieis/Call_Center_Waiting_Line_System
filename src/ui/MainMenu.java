@@ -215,11 +215,24 @@ public class MainMenu {
             return;
         }
 
-        renderer.renderMessage("Processing call:");
+        renderer.renderMessage("Processing call...");
         renderer.renderCall(call);
 
-        // Randomly set status: 70% COMPLETED, 30% MISSED
+        // Random processing time from 50 to 1000ms
         java.util.Random rand = new java.util.Random();
+        int processingTime = 50 + rand.nextInt(951); // 50 to 1000 inclusive
+        
+        System.out.printf("  [i] Simulating call handling: %d ms delay...%n", processingTime);
+        try {
+            Thread.sleep(processingTime);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Increment wait time for remaining calls in queue
+        router.incrementWaitingCallsWaitTime(processingTime);
+
+        // Randomly set status: 70% COMPLETED, 30% MISSED
         if (rand.nextInt(100) < 70) {
             call.setStatus(CallStatus.COMPLETED);
         } else {
@@ -264,6 +277,20 @@ public class MainMenu {
             if (call == null) {
                 break;
             }
+
+            int processingTime = 50 + rand.nextInt(951); // 50 to 1000 inclusive
+            System.out.printf("  [i] [%d/%d] Processing call %s (%s) - Time: %d ms...%n", 
+                    (i + 1), countToProcess, call.getCustomerId(), call.getCustomerName(), processingTime);
+            
+            try {
+                Thread.sleep(processingTime);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+
+            // Increment wait time for remaining calls in queue
+            router.incrementWaitingCallsWaitTime(processingTime);
 
             // Randomly set status: 70% COMPLETED, 30% MISSED
             if (rand.nextInt(100) < 70) {
