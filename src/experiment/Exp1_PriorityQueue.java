@@ -51,9 +51,8 @@ public class Exp1_PriorityQueue {
         System.out.println("  Simulation Speed: 1/10 (Processing delay: 10-100ms/call)");
 
         // Sinh dữ liệu đồng nhất bằng cách khóa Seed ngẫu nhiên (Giúp kết quả test giữa 2 kịch bản luôn công bằng)
-        List<SimCall> datasetA = generateDeterministicDataset(12345);
-        List<SimCall> datasetB = cloneDataset(datasetA);
-
+    List<SimCall> datasetA = generateDeterministicDataset(new Random().nextInt(1000000));
+    List<SimCall> datasetB = generateDeterministicDataset(new Random().nextInt(1000000));
         System.out.println("  Total Generated Calls: " + datasetA.size());
         System.out.println();
 
