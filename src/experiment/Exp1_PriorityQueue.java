@@ -48,12 +48,13 @@ public class Exp1_PriorityQueue {
         System.out.println("EXPERIMENT 1: DUAL QUEUE VS SINGLE QUEUE WITH AGING");
         System.out.println("==================================================================");
         System.out.println("  Configuration: 500 calls/hour | 20% VIP | 5 Agents | Duration: 1 hour");
-        System.out.println("  Simulation Speed: 1/10 (Processing delay: 10-100ms/call)");
+        System.out.println("  Simulation Speed: 1/5 (Processing delay: 20-200ms/call)");
 
-        // Sinh dữ liệu đồng nhất bằng cách khóa Seed ngẫu nhiên (Giúp kết quả test giữa 2 kịch bản luôn công bằng)
-    List<SimCall> datasetA = generateDeterministicDataset(new Random().nextInt(1000000));
-    List<SimCall> datasetB = generateDeterministicDataset(new Random().nextInt(1000000));
-        System.out.println("  Total Generated Calls: " + datasetA.size());
+        // Sinh dữ liệu MỘT LẦN DUY NHẤT với seed cố định để đảm bảo 2 kịch bản so sánh trên CÙNG một tập dữ liệu
+        // (Fair comparison: same arrival times, same handling times, same VIP/repeat distribution)
+        List<SimCall> datasetA = generateDeterministicDataset(12345);
+        List<SimCall> datasetB = cloneDataset(datasetA); // Deep clone để Scenario A không làm thay đổi dữ liệu của B
+        System.out.println("  Total Generated Calls: " + datasetA.size() + " (shared by both scenarios)");
         System.out.println();
 
         System.out.println("  Running Scenario A (Dual Queue)...");
@@ -142,11 +143,12 @@ public class Exp1_PriorityQueue {
     }
 
     /**
-     * Thực hiện Thread.sleep ngẫu nhiên 10-100ms cho mỗi cuộc gọi xử lý.
+     * Thực hiện Thread.sleep ngẫu nhiên 20-200ms cho mỗi cuộc gọi xử lý.
      * Đây là quá trình mô phỏng độ trễ xử lý thực tế mà người dùng có thể quan sát được trên console.
+     * Tốc độ mô phỏng = 1/5 thời gian thật (20-200ms thay vì 100-1000ms thực tế).
      */
     private void simulateProcessing(Random rand) {
-        int sleepMs = 10 + rand.nextInt(91); // Thang đo ngẫu nhiên từ 10ms đến 100ms
+        int sleepMs = 20 + rand.nextInt(181); // Thang đo ngẫu nhiên từ 20ms đến 200ms
         try {
             Thread.sleep(sleepMs);
         } catch (InterruptedException e) {
@@ -338,7 +340,7 @@ public class Exp1_PriorityQueue {
 
         // In bảng so sánh trực quan
         System.out.println("\nSIMULATION METRICS REPORT");
-        System.out.println("  Setup: 500 calls/hour | 20% VIP | 5 Agents | Speed: x10");
+        System.out.println("  Setup: 500 calls/hour | 20% VIP | 5 Agents | Speed: x5");
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
         System.out.printf("  %-45s │ %-28s │ %-28s%n",
                 "Metric Description",
@@ -346,28 +348,29 @@ public class Exp1_PriorityQueue {
                 "Scenario B (Aging Queue)");
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
 
-        System.out.println("  [1] Average Wait Time (AWT):");
-        System.out.printf("   - Regular Customer                           │ %-28s │ %-28s%n",
+        System.out.println("  [1] Average Wait Time (AWT) - Mean time customers spend waiting in queue:");
+        System.out.printf("   - Regular (Non-VIP) Customers                │ %-28s │ %-28s%n",
                 formatDuration(regAwtA) + " (" + String.format("%.1f", regAwtA) + "s)",
                 formatDuration(regAwtB) + " (" + String.format("%.1f", regAwtB) + "s)");
-        System.out.printf("   - VIP Customer                               │ %-28s │ %-28s%n",
+        System.out.printf("   - VIP Customers                              │ %-28s │ %-28s%n",
                 formatDuration(vipAwtA) + " (" + String.format("%.1f", vipAwtA) + "s)",
                 formatDuration(vipAwtB) + " (" + String.format("%.1f", vipAwtB) + "s)");
-        System.out.printf("   - Overall System                             │ %-28s │ %-28s%n",
+        System.out.printf("   - Overall System (All Customers)             │ %-28s │ %-28s%n",
                 formatDuration(totalAwtA) + " (" + String.format("%.1f", totalAwtA) + "s)",
                 formatDuration(totalAwtB) + " (" + String.format("%.1f", totalAwtB) + "s)");
 
-        System.out.println("  [2] Maximum Wait Time (Max WT):");
-        System.out.printf("   - Regular Customer                           │ %-28s │ %-28s%n",
+        System.out.println("  [2] Maximum Wait Time (Max WT) - Longest single wait experienced:");
+        System.out.printf("   - Regular (Non-VIP) Customers                │ %-28s │ %-28s%n",
                 formatDuration(maxRegA) + " (" + maxRegA + "s)",
                 formatDuration(maxRegB) + " (" + maxRegB + "s)");
-        System.out.printf("   - VIP Customer                               │ %-28s │ %-28s%n",
+        System.out.printf("   - VIP Customers                              │ %-28s │ %-28s%n",
                 formatDuration(maxVipA) + " (" + maxVipA + "s)",
                 formatDuration(maxVipB) + " (" + maxVipB + "s)");
 
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
-        System.out.printf("  Regular Customer Variance: Average Delta: %.2f%% | Maximum Delta: %.2f%%%n",
+        System.out.printf("  Regular Customer Improvement: Average Wait Reduced by %.2f%% | Max Wait Reduced by %.2f%%%n",
                 regAwtImprovement, regMaxImprovement);
+        System.out.println("  (Positive % = Scenario B (Aging) is better for regular customers)");
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
 
         // Ghi dữ liệu kết quả ra file định dạng CSV để phục vụ phân tích/vẽ biểu đồ sau này
@@ -377,11 +380,11 @@ public class Exp1_PriorityQueue {
             storage.FileHandler fh = new storage.FileHandler(csvPath);
             List<String> csvLines = new ArrayList<>();
             csvLines.add("Metric Description,Scenario A (Dual Queue) (seconds),Scenario B (Aging Queue) (seconds),Improvement (%)");
-            csvLines.add(String.format(Locale.US, "Average Wait Time - Regular Customer,%.2f,%.2f,%.2f%%", regAwtA, regAwtB, regAwtImprovement));
-            csvLines.add(String.format(Locale.US, "Average Wait Time - VIP Customer,%.2f,%.2f,N/A", vipAwtA, vipAwtB));
-            csvLines.add(String.format(Locale.US, "Average Wait Time - Overall System,%.2f,%.2f,%.2f%%", totalAwtA, totalAwtB, (totalAwtA > 0 ? ((totalAwtA - totalAwtB)/totalAwtA)*100.0 : 0)));
-            csvLines.add(String.format(Locale.US, "Max Wait Time - Regular Customer,%d,%d,%.2f%%", maxRegA, maxRegB, regMaxImprovement));
-            csvLines.add(String.format(Locale.US, "Max Wait Time - VIP Customer,%d,%d,N/A", maxVipA, maxVipB));
+            csvLines.add(String.format(Locale.US, "Average Wait Time - Regular (Non-VIP) Customers,%.2f,%.2f,%.2f%%", regAwtA, regAwtB, regAwtImprovement));
+            csvLines.add(String.format(Locale.US, "Average Wait Time - VIP Customers,%.2f,%.2f,N/A", vipAwtA, vipAwtB));
+            csvLines.add(String.format(Locale.US, "Average Wait Time - Overall System (All Customers),%.2f,%.2f,%.2f%%", totalAwtA, totalAwtB, (totalAwtA > 0 ? ((totalAwtA - totalAwtB)/totalAwtA)*100.0 : 0)));
+            csvLines.add(String.format(Locale.US, "Max Wait Time - Regular (Non-VIP) Customers,%d,%d,%.2f%%", maxRegA, maxRegB, regMaxImprovement));
+            csvLines.add(String.format(Locale.US, "Max Wait Time - VIP Customers,%d,%d,N/A", maxVipA, maxVipB));
             fh.writeLines(csvLines);
             System.out.println("  Data saved to: " + csvPath);
         } catch (Exception e) {
@@ -391,10 +394,10 @@ public class Exp1_PriorityQueue {
         // Kết luận thực nghiệm tổng quan bài toán toán học / giải thuật dưới dạng kê khai thông số tĩnh
         System.out.println("\nMETRICS SUMMARY:");
         System.out.println("  Scenario A (Dual Queue):");
-        System.out.println("     - Regular Customer AWT: " + formatDuration(regAwtA) + " | Max WT: " + formatDuration(maxRegA));
-        System.out.println("     - VIP Customer AWT: " + formatDuration(vipAwtA) + " | Max WT: " + formatDuration(maxVipA));
+        System.out.println("     - Regular (Non-VIP) Customers AWT: " + formatDuration(regAwtA) + " | Max WT: " + formatDuration(maxRegA));
+        System.out.println("     - VIP Customers AWT: " + formatDuration(vipAwtA) + " | Max WT: " + formatDuration(maxVipA));
         System.out.println("  Scenario B (Single Queue + Aging):");
-        System.out.println("     - Regular Customer AWT: " + formatDuration(regAwtB) + " | Max WT: " + formatDuration(maxRegB));
-        System.out.println("     - VIP Customer AWT: " + formatDuration(vipAwtB) + " | Max WT: " + formatDuration(maxVipB));
+        System.out.println("     - Regular (Non-VIP) Customers AWT: " + formatDuration(regAwtB) + " | Max WT: " + formatDuration(maxRegB));
+        System.out.println("     - VIP Customers AWT: " + formatDuration(vipAwtB) + " | Max WT: " + formatDuration(maxVipB));
     }
 }
