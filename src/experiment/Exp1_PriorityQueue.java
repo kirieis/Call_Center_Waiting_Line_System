@@ -144,7 +144,7 @@ public class Exp1_PriorityQueue {
             // Thiết lập các thuộc tính ngẫu nhiên cho cuộc gọi:
             boolean isVip = rand.nextDouble() < 0.20; // 20% cuộc gọi được chỉ định là VIP
             int repeatCalls = rand.nextInt(100) < 15 ? rand.nextInt(3) + 1 : 0; // 15% tỷ lệ gọi lại (từ 1 đến 3 lần)
-            int handlingTime = (rand.nextInt(4) + 2) * 60; // Thời lượng đàm thoại ngẫu nhiên từ 2-5 phút (120-300 giây)
+            int handlingTime = (rand.nextInt(241) + 60) / 60; // Thời lượng đàm thoại ngẫu nhiên từ 2-5 phút (120-300 giây)
 
             // Khởi tạo đối tượng Call gốc
             String id = "C" + String.format("%04d", orderCounter);
