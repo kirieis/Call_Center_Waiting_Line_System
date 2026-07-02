@@ -3,6 +3,8 @@ package experiment;
 import model.Call;
 import model.CallStatus;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * THỰC NGHIỆM 1: SO SÁNH HÀNG ĐỢI KÉP TÁCH BIỆT (DUAL QUEUE) 
@@ -14,15 +16,36 @@ import java.util.*;
  *   và hạn chế tình trạng "starvation" (đói thuật toán - khách hàng thường bị bỏ rơi vô thời hạn)
  *   khi hệ thống call center rơi vào trạng thái quá tải nghiêm trọng.
  * 
- * 2. CƠ CHẾ MÔ PHỎNG CHI TIẾT:
- * - Sử dụng đồng hồ ảo (virtual clock) chạy bằng biến đếm 't' (đơn vị: giây) để đồng bộ hóa 
- *   thời điểm cuộc gọi đến (arrival time) và thời gian đàm thoại (handling time).
- * - Sử dụng Phân phối Poisson để giả lập cuộc gọi đến ngẫu nhiên nhưng thực tế (500 cuộc gọi/giờ).
- * - Thời gian xử lý cuộc gọi (Handling time) ngẫu nhiên từ 2 đến 5 phút (120 - 300 giây ảo).
- * - Tốc độ mô phỏng được nén theo tỷ lệ thời gian cố định 1:20 so với thời gian thực
- *   (1 giờ ảo (3600 giây) ≈ 6 phút thật). Thời gian Thread.sleep cho mỗi cuộc gọi được TÍNH TOÁN
- *   dựa trên tổng số cuộc gọi thực tế sinh ra (không còn là số random tùy tiện), đảm bảo tổng thời
- *   gian chạy thật của mỗi kịch bản luôn khớp đúng tỷ lệ 1:20 dù dataset có bao nhiêu cuộc gọi.
+ * 2. CƠ CHẾ MÔ PHỎNG CHI TIẾT (KIẾN TRÚC ĐA LUỒNG - MULTI-THREADING THẬT):
+ * - Tổng số cuộc gọi được sinh ra là CỐ ĐỊNH, do lập trình viên cấu hình qua hằng số
+ *   TOTAL_CALLS_TO_GENERATE (mặc định 500 cuộc gọi).
+ * - Thời gian xử lý cuộc gọi (Handling time) là số GIÂY THỰC TẾ của cuộc đàm thoại ngoài đời,
+ *   random đều trong khoảng 30 đến 180 giây.
+ * - KIẾN TRÚC XỬ LÝ: hệ thống dùng NHIỀU THREAD CHẠY THẬT SONG SONG với nhau, mô phỏng đúng
+ *   bản chất "10 Agent làm việc cùng lúc" thay vì giả lập tuần tự trên 1 luồng duy nhất:
+ *     + 1 THREAD "DISPATCHER" (điều phối cuộc gọi đến): duyệt qua danh sách cuộc gọi theo đúng
+ *       thứ tự arrivalTime, Thread.sleep đúng khoảng cách thời gian (đã nén theo
+ *       PROCESSING_SPEEDUP_FACTOR) giữa 2 cuộc gọi liên tiếp, rồi "bơm" cuộc gọi đó vào hàng đợi
+ *       chung — mô phỏng việc khách hàng gọi đến rải rác theo thời gian, không đến dồn dập.
+ *     + NUM_AGENTS (10) THREAD "AGENT": mỗi thread đại diện cho một điện thoại viên, chạy độc lập
+ *       và song song với các Agent khác. Khi rảnh, Agent tự lấy cuộc gọi có độ ưu tiên cao nhất
+ *       trong hàng đợi chung (có đồng bộ hóa - synchronized để tránh xung đột dữ liệu giữa các
+ *       luồng), rồi Thread.sleep đúng (handlingTime / PROCESSING_SPEEDUP_FACTOR) giây để giả lập
+ *       thời gian đàm thoại, sau đó quay lại lấy cuộc gọi tiếp theo.
+ *     + 1 THREAD "AGING" (chỉ dùng ở Kịch bản B): chạy song song, định kỳ quét hàng đợi để cộng
+ *       điểm ưu tiên cho khách hàng thường đang chờ.
+ *   Nhờ chạy THẬT SỰ song song (không phải giả lập tuần tự), tổng thời gian máy chạy sẽ ngắn hơn
+ *   nhiều lần so với việc cộng dồn tuần tự tất cả handlingTime, và phản ánh đúng thực tế: 10 Agent
+ *   xử lý được nhiều việc hơn trong cùng một khoảng thời gian so với 1 Agent làm một mình.
+ * - TỐC ĐỘ MÔ PHỎNG TRÊN MÁY: vì handlingTime giờ đã là số giây thực tế (không phải số ảo cần
+ *   nhân/chia theo một tỷ lệ nén lớn), chương trình chỉ tăng tốc xử lý lên GẤP 5 LẦN so với đời
+ *   thực để rút ngắn thời gian chờ khi chạy thử nghiệm trên máy (PROCESSING_SPEEDUP_FACTOR = 5).
+ *   Ví dụ: cuộc gọi có handlingTime = 100 giây (đời thật) sẽ khiến Agent thread sleep 100/5 = 20 giây.
+ *   QUY ĐỔI NGƯỢC: nếu muốn biết một khoảng thời gian đã đo được trên máy tương ứng bao nhiêu giây
+ *   ngoài đời thực, hãy NHÂN thời gian đo được trên máy với PROCESSING_SPEEDUP_FACTOR. Các chỉ số
+ *   waitTime/AWT/Max WT trong báo cáo đã được quy đổi sẵn về ĐƠN VỊ GIÂY THỰC TẾ của khách hàng —
+ *   chỉ riêng "Execution Time" (thời gian máy thực sự chạy chương trình) mới cần nhân 5 để hiểu
+ *   được nó tương ứng bao lâu ở ngoài đời.
  * 
  * @author Group 7
  */
@@ -31,10 +54,17 @@ public class Exp1_PriorityQueue {
     // Số lượng điện thoại viên (Agent) xử lý cuộc gọi trong hệ thống (được nâng lên thành 10 Agents)
     private static final int NUM_AGENTS = 10;
     
-    // Thời gian giả lập hoạt động của tổng đài là 1 giờ (quy đổi ra 3600 giây ảo trên đồng hồ hệ thống)
-    private static final int SIM_DURATION_SECONDS = 1 * 3600; 
+    // Tổng số cuộc gọi CỐ ĐỊNH mà chương trình sẽ sinh ra cho mỗi lần chạy thực nghiệm.
+    // Đây là con số tường minh, lập trình viên có thể tùy ý chỉnh sửa (ví dụ 300, 800, 1000...)
+    // để thử nghiệm với các quy mô tải khác nhau. Cả Kịch bản A và B đều dùng chung đúng số lượng
+    // cuộc gọi này (nhờ cơ chế deep-clone dataset ở hàm run()), đảm bảo so sánh công bằng.
+    private static final int TOTAL_CALLS_TO_GENERATE = 500;
     
-    // Tần suất cuộc gọi trung bình mỗi giây ảo theo cấu hình (500 cuộc/giờ => ~0.1389 cuộc/giây)
+    // Tần suất cuộc gọi đến trung bình mỗi giây ảo (dùng để rải ngẫu nhiên arrivalTime giữa các
+    // cuộc gọi theo Phân phối Poisson, tạo nhịp đến tự nhiên chứ không đến dồn dập cùng lúc).
+    // Con số 500.0/3600.0 nghĩa là trung bình 500 cuộc gọi mỗi giờ ảo (~0.1389 cuộc/giây ảo).
+    // Lưu ý: hằng số này CHỈ quyết định KHOẢNG CÁCH giữa các cuộc gọi, KHÔNG quyết định tổng số
+    // cuộc gọi sinh ra — tổng số cuộc gọi luôn đúng bằng TOTAL_CALLS_TO_GENERATE ở trên.
     private static final double CALL_RATE_PER_SECOND = 500.0 / 3600.0; 
     
     // Chu kỳ quét hàng đợi để cộng điểm ưu tiên (Aging) cho khách hàng thường (mỗi 60 giây ảo)
@@ -43,25 +73,40 @@ public class Exp1_PriorityQueue {
     // Số điểm ưu tiên cộng thêm cho mỗi lần quét Aging (15 điểm/phút chờ đợi)
     private static final int AGING_BOOST_POINTS = 15; 
 
-    // Tỷ lệ nén thời gian mô phỏng so với thời gian thực: 1:20
-    // Nghĩa là 1 giờ ảo (3600 giây) sẽ chạy thật trong khoảng 3600 / 20 = 180 giây = 3 phút
-    private static final int TIME_COMPRESSION_RATIO = 20;
-
-    // Tổng thời gian thật (mili giây) mà MỖI kịch bản (A hoặc B) cần chạy hết để giữ đúng tỷ lệ 1:20
-    private static final long TARGET_REAL_DURATION_MS = (SIM_DURATION_SECONDS * 1000L) / TIME_COMPRESSION_RATIO;
+    // Hệ số tăng tốc xử lý trên máy so với thời lượng cuộc gọi THỰC TẾ (handlingTime).
+    // Vì handlingTime giờ đã là số giây có ý nghĩa thực tế (30-180 giây, đúng bằng thời lượng
+    // đàm thoại ngoài đời), chương trình không "nén" theo một tỷ lệ lớn như trước nữa, mà chỉ
+    // tăng tốc gấp 5 lần để rút ngắn thời gian chờ khi chạy demo/thử nghiệm trên máy.
+    // Công thức áp dụng (xem hàm simulateProcessing): sleepGiayThat = handlingTime / PROCESSING_SPEEDUP_FACTOR
+    // QUY ĐỔI NGƯỢC: thời gian thật đo được trên máy × PROCESSING_SPEEDUP_FACTOR = thời lượng
+    // cuộc gọi tương ứng ngoài đời thực (giây).
+    private static final int PROCESSING_SPEEDUP_FACTOR = 100;
 
     /**
      * Lớp SimCall (Simulation Call) đóng vai trò là một Wrapper (lớp bao bọc) quanh model Call gốc.
      * Nó bổ sung các trường thông tin phục vụ riêng cho quá trình chạy mô phỏng:
-     * - arrivalTime: Thời điểm cuộc gọi bắt đầu xuất hiện trong hệ thống (giây ảo).
-     * - handlingTime: Thời lượng cuộc gọi này chiếm dụng Agent (giây ảo).
-     * - waitTime: Thời gian chờ đợi thực tế trong hàng đợi (giây ảo), tính từ lúc đến tới lúc được Agent bắt máy.
+     * - arrivalTime: Thời điểm cuộc gọi lẽ ra xuất hiện trong hệ thống, tính bằng GIÂY THỰC TẾ
+     *   kể từ lúc bắt đầu kịch bản (dùng để Dispatcher thread tính khoảng cách sleep giữa các cuộc gọi).
+     * - handlingTime: Thời lượng cuộc gọi này chiếm dụng Agent (giây thực tế, 30-180s).
+     * - waitTime: Thời gian chờ đợi thực tế trong hàng đợi (giây thực tế, đã quy đổi ngược từ thời
+     *   gian máy đo được bằng PROCESSING_SPEEDUP_FACTOR), tính từ lúc "đến" tới lúc được Agent bắt máy.
+     * - dispatchedAtMachineMs: mốc thời gian MÁY (System.currentTimeMillis()) tại thời điểm Dispatcher
+     *   thread bơm cuộc gọi này vào hàng đợi chung. Vì kiến trúc đa luồng không còn một "đồng hồ ảo t"
+     *   chạy tuần tự chung cho mọi thread, trường này là điểm neo để Agent thread tính waitTime chính
+     *   xác khi cuộc gọi được lấy ra xử lý (waitTime = (thời gian máy lúc xử lý - dispatchedAtMachineMs)
+     *   × PROCESSING_SPEEDUP_FACTOR / 1000, quy đổi mili-giây máy về giây thực tế của khách hàng).
      */
     static class SimCall {
         Call call;          // Đối tượng Call chứa thông tin nghiệp vụ chính (ID, Tên, VIP/Thường, số lần gọi lại...)
-        int arrivalTime;    // Thời điểm cuộc gọi đến (giây ảo trên timeline)
-        int handlingTime;   // Thời gian xử lý đàm thoại (giây ảo)
-        int waitTime = -1;  // Thời gian chờ ảo (giây ảo) = Thời điểm phục vụ - arrivalTime
+        int arrivalTime;    // Thời điểm cuộc gọi lẽ ra đến (giây thực tế, dùng cho Dispatcher thread)
+        int handlingTime;   // Thời gian xử lý đàm thoại (giây thực tế)
+        // waitTime dùng kiểu double (KHÔNG phải int như bản cũ) để giữ độ chính xác thập phân.
+        // Lý do: khi hệ thống không quá tải (ví dụ NUM_AGENTS lớn), Agent có thể lấy được cuộc gọi
+        // chỉ sau vài chục mili-giây máy. Nếu ép kiểu về int ngay sau khi chia cho 1000L, các giá
+        // trị dưới 1 giây sẽ bị CẮT CỤT VỀ 0 (ví dụ 49ms máy × 20 / 1000 = 0.98 → ép int thành 0),
+        // khiến AWT tổng thể bị kéo xuống sai lệch nghiêm trọng dù thực chất khách vẫn phải chờ.
+        double waitTime = -1;
+        volatile long dispatchedAtMachineMs = -1; // Mốc thời gian máy khi được bơm vào hàng đợi (set bởi Dispatcher thread)
 
         SimCall(Call call, int arrivalTime, int handlingTime) {
             this.call = call;
@@ -77,9 +122,12 @@ public class Exp1_PriorityQueue {
         System.out.println("\n==================================================================");
         System.out.println("EXPERIMENT 1: DUAL QUEUE VS SINGLE QUEUE WITH AGING");
         System.out.println("==================================================================");
-        System.out.println("  Configuration: 500 calls/hour | 20% VIP | 10 Agents | Duration: 1 hour");
-        System.out.println("  Simulation Speed: Compressed 1:" + TIME_COMPRESSION_RATIO 
-                + " (1 hour virtual ≈ " + (TARGET_REAL_DURATION_MS / 1000 / 60) + " minutes real, per scenario)");
+        System.out.println("  Configuration: " + TOTAL_CALLS_TO_GENERATE + " calls (fixed) | 20% VIP | "
+                + NUM_AGENTS + " Agents | Handling time: 30-180s (real-world seconds per call)");
+        System.out.println("  Processing Speed: " + PROCESSING_SPEEDUP_FACTOR
+                + "x faster than real time (sleep = handlingTime / " + PROCESSING_SPEEDUP_FACTOR + " seconds per call)");
+        System.out.println("  Note: 'Execution Time' printed below is MACHINE time. Multiply it by "
+                + PROCESSING_SPEEDUP_FACTOR + " to get the equivalent real-world elapsed time.");
 
         // BƯỚC 1: Sinh ngẫu nhiên tập dữ liệu cuộc gọi (Dataset) theo phân phối Poisson.
         // Việc sinh dữ liệu MỘT LẦN duy nhất đảm bảo cả hai kịch bản đều chạy trên cùng một tập cuộc gọi giống hệt nhau,
@@ -115,18 +163,23 @@ public class Exp1_PriorityQueue {
 
     /**
      * Sinh tập dữ liệu các cuộc gọi ngẫu nhiên dựa trên thuật toán Poisson Process.
-     * - Arrival rate (tốc độ đến): 500 cuộc gọi/giờ (xấp xỉ 0.1389 cuộc gọi/giây).
-     * - Handling time (thời lượng xử lý): Ngẫu nhiên từ 2 đến 5 phút (120 đến 300 giây ảo).
+     * - Số lượng cuộc gọi: CỐ ĐỊNH, đúng bằng TOTAL_CALLS_TO_GENERATE (mặc định 500).
+     * - Arrival rate (khoảng cách giữa các cuộc gọi): rải theo Phân phối Poisson với tốc độ
+     *   trung bình CALL_RATE_PER_SECOND, tạo nhịp đến tự nhiên (không đến dồn dập cùng lúc).
+     * - Handling time (thời lượng xử lý): số giây thực tế, random đều từ 30 đến 180 giây.
      * - VIP Ratio (tỷ lệ VIP): Cố định khoảng 20%.
      */
     private List<SimCall> generateDataset() {
         Random rand = new Random();
         List<SimCall> list = new ArrayList<>();
-        int currentTime = 0; // Đồng hồ ảo dùng để ghi nhận thời điểm cuộc gọi đến
+        int currentTime = 0; // Mốc thời gian THỰC TẾ (giây, kể từ lúc bắt đầu kịch bản) ghi nhận cuộc gọi đến
         int orderCounter = 1; // Biến đếm số thứ tự cuộc gọi sinh ra
 
-        // Sinh liên tục các cuộc gọi cho đến khi thời điểm đến vượt quá thời gian mô phỏng (1 giờ = 3600 giây)
-        while (currentTime < SIM_DURATION_SECONDS) {
+        // Sinh liên tục các cuộc gọi cho đến khi đủ đúng TOTAL_CALLS_TO_GENERATE cuộc gọi.
+        // Khác với bản cũ (dừng theo mốc thời gian 1 giờ), giờ đây tổng số cuộc gọi LUÔN CỐ ĐỊNH,
+        // còn khoảng cách thời gian giữa các cuộc gọi (currentTime) chỉ đóng vai trò tạo nhịp đến
+        // tự nhiên và có thể kéo dài ngắn hơn hoặc dài hơn 1 giờ ảo tùy vào yếu tố ngẫu nhiên.
+        while (list.size() < TOTAL_CALLS_TO_GENERATE) {
             double u = rand.nextDouble();
             while (u == 0) u = rand.nextDouble(); // Loại trừ trường hợp u = 0 để tránh lỗi toán học Math.log(0)
 
@@ -138,13 +191,13 @@ public class Exp1_PriorityQueue {
             if (nextArrivalInterval < 1) nextArrivalInterval = 1; 
             currentTime += nextArrivalInterval;
 
-            // Nếu thời điểm cuộc gọi đến vượt quá thời lượng mô phỏng 1 giờ thì dừng sinh cuộc gọi
-            if (currentTime >= SIM_DURATION_SECONDS) break;
-
             // Thiết lập các thuộc tính ngẫu nhiên cho cuộc gọi:
             boolean isVip = rand.nextDouble() < 0.20; // 20% cuộc gọi được chỉ định là VIP
             int repeatCalls = rand.nextInt(100) < 15 ? rand.nextInt(3) + 1 : 0; // 15% tỷ lệ gọi lại (từ 1 đến 3 lần)
-            int handlingTime = (rand.nextInt(241) + 60) / 60; // Thời lượng đàm thoại ngẫu nhiên từ 2-5 phút (120-300 giây)
+            // Thời lượng đàm thoại (handling time) tính bằng GIÂY THỰC TẾ, random đều trong khoảng
+            // 30 đến 180 giây (rand.nextInt(151) sinh ra số nguyên từ 0 đến 150, cộng 30 => 30-180).
+            // Không còn quy đổi/làm tròn ra phút như bản cũ, giúp giá trị đa dạng hơn theo từng giây.
+            int handlingTime = rand.nextInt(151) + 30;
 
             // Khởi tạo đối tượng Call gốc
             String id = "C" + String.format("%04d", orderCounter);
@@ -199,28 +252,25 @@ public class Exp1_PriorityQueue {
     }
 
     /**
-     * Giả lập thời gian xử lý thực tế bằng cách cho luồng ngủ (Thread.sleep), với thời lượng
-     * được TÍNH TOÁN dựa trên tỷ lệ nén thời gian cố định 1:20 (xem TIME_COMPRESSION_RATIO), 
-     * KHÔNG còn là con số random tùy tiện như trước.
+     * Giả lập độ trễ thời gian thực khi một Agent thread xử lý MỘT cuộc gọi cụ thể, bằng cách cho
+     * chính luồng Agent đó ngủ (Thread.sleep) một khoảng thời gian tỷ lệ thuận với handlingTime.
      * 
-     * Công thức: sleep trung bình mỗi cuộc gọi = TARGET_REAL_DURATION_MS / totalCalls
-     * => Tổng thời gian sleep cộng dồn của toàn bộ totalCalls cuộc gọi sẽ xấp xỉ đúng bằng 
-     *    TARGET_REAL_DURATION_MS (6 phút thật cho 1 giờ ảo), bất kể dataset sinh ra bao nhiêu cuộc gọi.
-     * Có dao động ngẫu nhiên nhẹ +-30% quanh mức trung bình để progress bar chạy tự nhiên,
-     * không đều tăm tắp một cách máy móc.
+     * CÔNG THỨC: sleepMs = (handlingTime × 1000) / PROCESSING_SPEEDUP_FACTOR
+     * Với PROCESSING_SPEEDUP_FACTOR = 5, nghĩa là máy xử lý NHANH HƠN đời thực đúng 5 lần.
+     * Ví dụ: cuộc gọi có handlingTime = 100 giây (đời thật) => Agent thread sleep 100×1000/5 = 20000ms.
      * 
-     * @param rand nguồn ngẫu nhiên dùng chung của kịch bản đang chạy
-     * @param totalCalls tổng số cuộc gọi của kịch bản đang chạy (dùng để chia đều thời gian sleep)
+     * Vì hàm này được gọi TRÊN THREAD RIÊNG của từng Agent (không phải luồng chính), việc sleep của
+     * Agent này KHÔNG chặn các Agent khác — 10 Agent có thể cùng sleep song song, phản ánh đúng bản
+     * chất 10 điện thoại viên làm việc đồng thời, thay vì cộng dồn tuần tự trên một luồng duy nhất.
+     * 
+     * QUY ĐỔI NGƯỢC: thời gian đo được trên máy × PROCESSING_SPEEDUP_FACTOR = thời lượng cuộc gọi
+     * tương ứng ngoài đời thực (giây).
+     * 
+     * @param handlingTimeSeconds thời lượng đàm thoại thực tế (giây) của cuộc gọi đang được xử lý
      */
-    private void simulateProcessing(Random rand, int totalCalls) {
-        // Thời gian sleep trung bình lý thuyết cho mỗi cuộc gọi, để tổng thời gian thật khớp tỷ lệ 1:20
-        long avgSleepMs = TARGET_REAL_DURATION_MS / totalCalls;
-        if (avgSleepMs < 1) avgSleepMs = 1; // đảm bảo luôn có độ trễ tối thiểu, tránh chia hết về 0
-
-        // Dao động ngẫu nhiên +-30% quanh mức trung bình để tạo nhịp tự nhiên cho progress bar
-        long variance = Math.max(1, (long) (avgSleepMs * 0.3));
-        long sleepMs = avgSleepMs + (rand.nextLong() % (variance * 2 + 1)) - variance;
-        if (sleepMs < 0) sleepMs = 0;
+    private void simulateProcessing(int handlingTimeSeconds) {
+        long sleepMs = (handlingTimeSeconds * 1000L) / PROCESSING_SPEEDUP_FACTOR;
+        if (sleepMs < 1) sleepMs = 1; // đảm bảo luôn có độ trễ tối thiểu, tránh sleep(0) vô nghĩa
 
         try {
             Thread.sleep(sleepMs);
@@ -234,65 +284,108 @@ public class Exp1_PriorityQueue {
      * 
      * [Nguyên tắc hoạt động]:
      * - Hệ thống duy trì 2 hàng đợi độc lập: vipQueue (chứa khách VIP) và regularQueue (chứa khách thường).
-     * - Khi một cuộc gọi đến tại thời điểm t, nó được phân loại vào đúng hàng đợi của mình.
-     * - Khi Agent rảnh tay:
+     * - 1 Dispatcher thread bơm cuộc gọi vào đúng hàng đợi của nó theo đúng nhịp arrivalTime.
+     * - NUM_AGENTS (10) Agent thread chạy song song. Khi một Agent rảnh tay:
      *   + Agent luôn kiểm tra vipQueue trước. Nếu có khách VIP, Agent sẽ phục vụ ngay lập tức.
      *   + CHỈ KHI hàng đợi vipQueue rỗng hoàn toàn, Agent mới bắt đầu phục vụ khách hàng thường trong regularQueue.
      * - Nguy cơ: Gây ra hiện tượng "Starvation" (đói thuật toán) nghiêm trọng cho khách thường nếu lượng khách VIP 
      *   đến liên tục, khiến khách thường bị kẹt lại phía sau vô thời hạn.
+     * 
+     * [Về đồng bộ hóa đa luồng]:
+     * - vipQueue/regularQueue dùng chung 1 khóa (lockObject) để đảm bảo tại một thời điểm chỉ có
+     *   MỘT thread (Dispatcher hoặc 1 trong 10 Agent) được thêm/lấy phần tử, tránh xung đột dữ liệu
+     *   (race condition) khi nhiều luồng cùng đọc/ghi danh sách.
+     * - processedCount dùng AtomicInteger để đếm số cuộc gọi đã xử lý xong một cách an toàn giữa
+     *   nhiều luồng, làm điều kiện dừng chung cho toàn bộ hệ thống.
      */
     private void runDualQueueSimulation(List<SimCall> dataset) {
-        int[] agentFreeTime = new int[NUM_AGENTS]; // agentFreeTime[i] lưu mốc thời điểm (giây ảo) mà Agent i sẽ rảnh tay để nhận cuộc gọi mới
         List<SimCall> vipQueue = new ArrayList<>(); // Hàng đợi lưu trữ các cuộc gọi VIP đang chờ
         List<SimCall> regularQueue = new ArrayList<>(); // Hàng đợi lưu trữ các cuộc gọi Thường đang chờ
-        Random rand = new Random();
+        final Object lockObject = new Object(); // Khóa đồng bộ hóa dùng chung cho cả 2 hàng đợi
+        final int totalCalls = dataset.size();
+        final AtomicInteger processedCount = new AtomicInteger(0);
+        final long startMachineMs = System.currentTimeMillis(); // Mốc thời gian máy lúc bắt đầu kịch bản
 
-        int callIndex = 0;
-        int totalCalls = dataset.size();
-        int processedCount = 0;
-        int t = 0; // Đồng hồ ảo (virtual clock) bắt đầu chạy từ giây thứ 0
-
-        // Lặp cho đến khi toàn bộ cuộc gọi sinh ra được xử lý xong
-        while (processedCount < totalCalls) {
-            // Bước 1: Quét các cuộc gọi có thời điểm đến (arrivalTime) <= thời gian ảo hiện tại t để đưa vào hàng đợi
-            while (callIndex < totalCalls && dataset.get(callIndex).arrivalTime <= t) {
-                SimCall sc = dataset.get(callIndex);
-                if (sc.call.isVIP()) {
-                    vipQueue.add(sc);
-                } else {
-                    regularQueue.add(sc);
+        // --- THREAD DISPATCHER: bơm cuộc gọi vào đúng hàng đợi theo đúng nhịp arrivalTime ---
+        Thread dispatcherThread = new Thread(() -> {
+            int previousArrival = 0;
+            for (SimCall sc : dataset) {
+                // Khoảng cách (giây thực tế) giữa cuộc gọi này và cuộc gọi trước đó
+                int gapSeconds = sc.arrivalTime - previousArrival;
+                if (gapSeconds > 0) {
+                    long sleepMs = (gapSeconds * 1000L) / PROCESSING_SPEEDUP_FACTOR;
+                    if (sleepMs > 0) {
+                        try {
+                            Thread.sleep(sleepMs);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
                 }
-                callIndex++;
+                previousArrival = sc.arrivalTime;
+                sc.dispatchedAtMachineMs = System.currentTimeMillis(); // Ghi nhận mốc thời gian máy khi cuộc gọi "đến"
+                synchronized (lockObject) {
+                    if (sc.call.isVIP()) {
+                        vipQueue.add(sc);
+                    } else {
+                        regularQueue.add(sc);
+                    }
+                    lockObject.notifyAll(); // Đánh thức các Agent đang chờ (nếu có) vì vừa có việc mới
+                }
             }
+        }, "Dispatcher-A");
 
-            // Bước 2: Duyệt qua danh sách Agent để tìm Agent rảnh tay tại thời điểm t
-            for (int i = 0; i < NUM_AGENTS; i++) {
-                if (agentFreeTime[i] <= t) {
+        // --- NUM_AGENTS THREAD AGENT: mỗi thread là 1 điện thoại viên chạy song song ---
+        Thread[] agentThreads = new Thread[NUM_AGENTS];
+        for (int a = 0; a < NUM_AGENTS; a++) {
+            agentThreads[a] = new Thread(() -> {
+                while (processedCount.get() < totalCalls) {
                     SimCall nextCall = null;
-
-                    // Áp dụng luật ưu tiên tuyệt đối: VIP được ưu tiên trước, Regular chỉ được gọi khi VIP trống
-                    if (!vipQueue.isEmpty()) {
-                        nextCall = vipQueue.remove(0); // Lấy cuộc gọi VIP đứng đầu hàng (FIFO trong nhóm VIP)
-                    } else if (!regularQueue.isEmpty()) {
-                        nextCall = regularQueue.remove(0); // Lấy cuộc gọi Thường đứng đầu hàng (FIFO trong nhóm Thường)
+                    synchronized (lockObject) {
+                        // Ưu tiên tuyệt đối: luôn lấy khách VIP trước, chỉ lấy khách Thường khi vipQueue rỗng
+                        if (!vipQueue.isEmpty()) {
+                            nextCall = vipQueue.remove(0);
+                        } else if (!regularQueue.isEmpty()) {
+                            nextCall = regularQueue.remove(0);
+                        } else {
+                            // Hàng đợi hiện đang rỗng: Agent chờ (block) tối đa 50ms rồi kiểm tra lại,
+                            // tránh vòng lặp "busy-wait" ngốn CPU trong lúc chờ Dispatcher bơm thêm cuộc gọi.
+                            try {
+                                lockObject.wait(50);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        }
                     }
-
-                    // Bước 3: Nếu tìm thấy cuộc gọi cần xử lý, tiến hành cập nhật số liệu
                     if (nextCall != null) {
-                        // Thời gian chờ = Thời điểm phục vụ hiện tại (t) - Thời điểm đến (arrivalTime)
-                        nextCall.waitTime = t - nextCall.arrivalTime; 
-                        
-                        // Agent i sẽ bận trong khoảng thời gian xử lý: cập nhật mốc rảnh tay tiếp theo
-                        agentFreeTime[i] = t + nextCall.handlingTime; 
-                        processedCount++;
+                        // waitTime (giây thực tế, kiểu double) = (thời gian máy hiện tại - mốc máy lúc cuộc gọi
+                        // được bơm vào) quy đổi từ mili-giây MÁY sang giây THỰC TẾ bằng cách nhân
+                        // PROCESSING_SPEEDUP_FACTOR. Dùng phép chia SỐ THỰC (1000.0, không phải 1000L) và
+                        // KHÔNG ép kiểu về int, để giữ nguyên phần thập phân — tránh làm tròn các cuộc gọi
+                        // chờ dưới 1 giây máy (rất phổ biến khi hệ thống có nhiều Agent, ít bị nghẽn) về 0.
+                        long waitMachineMs = System.currentTimeMillis() - nextCall.dispatchedAtMachineMs;
+                        nextCall.waitTime = (waitMachineMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
 
-                        // Tạo hiệu ứng trễ xử lý thực tế (đã tính theo tỷ lệ nén 1:20) và vẽ lại thanh tiến trình
-                        simulateProcessing(rand, totalCalls);
-                        printProgress(processedCount, totalCalls, "Scenario A");
+                        simulateProcessing(nextCall.handlingTime); // Agent "đàm thoại" trong handlingTime/5 giây máy
+                        int done = processedCount.incrementAndGet();
+                        printProgress(done, totalCalls, "Scenario A");
                     }
                 }
-            }
-            t++; // Đồng hồ ảo tăng lên 1 giây sau mỗi chu kỳ quét
+            }, "Agent-A-" + a);
+        }
+
+        // Khởi động toàn bộ Dispatcher + Agent threads để chạy song song
+        dispatcherThread.start();
+        for (Thread t : agentThreads) t.start();
+
+        // Đợi Dispatcher bơm xong hết dữ liệu, rồi đợi tất cả Agent xử lý xong nốt phần còn lại trong hàng đợi
+        try {
+            dispatcherThread.join();
+            for (Thread t : agentThreads) t.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -311,77 +404,139 @@ public class Exp1_PriorityQueue {
      * - Ưu điểm: Khách thường chờ càng lâu sẽ có điểm ưu tiên càng cao, dần dần vượt qua điểm của khách VIP mới đến, 
      *   giúp họ chắc chắn được phục vụ và loại bỏ hoàn toàn hiện tượng Starvation.
      */
+    /**
+     * KỊCH BẢN B: HÀNG ĐỢI ĐƠN TÍCH HỢP CƠ CHẾ CHỐNG NGHẼN/LÃO HÓA (SINGLE QUEUE + AGING)
+     * 
+     * [Nguyên tắc hoạt động]:
+     * - Chỉ duy trì một hàng đợi duy nhất (priorityQueue) cho tất cả các cuộc gọi (cả VIP và Thường).
+     * - Độ ưu tiên của mỗi cuộc gọi được đánh giá động dựa trên công thức:
+     *     Tổng Điểm Ưu Tiên = Điểm Cấu Hình Ban Đầu (Priority Score) + Điểm Thưởng Tích Lũy Chờ Đợi (Aging Boost)
+     * - Cơ chế Aging (Lão hóa): Cứ sau mỗi chu kỳ (AGING_INTERVAL_SECONDS giây thực tế, quy đổi ra
+     *   thời gian máy), tất cả các khách hàng THƯỜNG còn đang nằm chờ trong hàng đợi sẽ được cộng
+     *   thêm một lượng điểm ưu tiên (+15 điểm), do 1 Aging thread chạy song song đảm nhiệm.
+     * - Khi một Agent rảnh tay: duyệt hàng đợi, chọn ra cuộc gọi có "Tổng Điểm Ưu Tiên" cao nhất để
+     *   phục vụ; nếu trùng điểm, áp dụng luật FIFO (ai đến trước phục vụ trước) làm tiêu chí phụ.
+     * - Ưu điểm: Khách thường chờ càng lâu sẽ có điểm ưu tiên càng cao, dần dần vượt qua điểm của khách VIP mới đến, 
+     *   giúp họ chắc chắn được phục vụ và loại bỏ hoàn toàn hiện tượng Starvation.
+     * 
+     * [Về đồng bộ hóa đa luồng]:
+     * - priorityQueue dùng chung 1 khóa (lockObject) cho Dispatcher, 10 Agent, và Aging thread.
+     * - processedCount dùng AtomicInteger, tương tự Kịch bản A.
+     */
     private void runSingleQueueAgingSimulation(List<SimCall> dataset) {
-        int[] agentFreeTime = new int[NUM_AGENTS]; // agentFreeTime[i] lưu mốc thời điểm Agent i rảnh tay
         List<SimCall> priorityQueue = new ArrayList<>(); // Hàng đợi chung tích hợp cơ chế xếp hạng động
-        Random rand = new Random();
+        final Object lockObject = new Object(); // Khóa đồng bộ hóa dùng chung cho hàng đợi
+        final int totalCalls = dataset.size();
+        final AtomicInteger processedCount = new AtomicInteger(0);
 
-        int callIndex = 0;
-        int totalCalls = dataset.size();
-        int processedCount = 0;
-        int t = 0; // Đồng hồ ảo bắt đầu từ giây thứ 0
-
-        while (processedCount < totalCalls) {
-            // Bước 1: Quét và đẩy các cuộc gọi mới xuất hiện tại thời điểm t vào hàng đợi chung
-            while (callIndex < totalCalls && dataset.get(callIndex).arrivalTime <= t) {
-                priorityQueue.add(dataset.get(callIndex));
-                callIndex++;
+        // --- THREAD DISPATCHER: bơm cuộc gọi vào hàng đợi chung theo đúng nhịp arrivalTime ---
+        Thread dispatcherThread = new Thread(() -> {
+            int previousArrival = 0;
+            for (SimCall sc : dataset) {
+                int gapSeconds = sc.arrivalTime - previousArrival;
+                if (gapSeconds > 0) {
+                    long sleepMs = (gapSeconds * 1000L) / PROCESSING_SPEEDUP_FACTOR;
+                    if (sleepMs > 0) {
+                        try {
+                            Thread.sleep(sleepMs);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
+                }
+                previousArrival = sc.arrivalTime;
+                sc.dispatchedAtMachineMs = System.currentTimeMillis();
+                synchronized (lockObject) {
+                    priorityQueue.add(sc);
+                    lockObject.notifyAll();
+                }
             }
+        }, "Dispatcher-B");
 
-            // Bước 2: Thực hiện cơ chế Aging (Lão hóa) định kỳ mỗi 60 giây ảo
-            // Ghi chú: Chúng ta tận dụng trường waitTime của đối tượng Call (được mặc định là 0 khi khởi tạo) 
-            // làm nơi lưu trữ điểm thưởng tích lũy (Aging Boost Points) của cuộc gọi đó.
-            if (t > 0 && t % AGING_INTERVAL_SECONDS == 0) {
-                for (SimCall sc : priorityQueue) {
-                    if (!sc.call.isVIP()) {
-                        // Cộng thêm điểm thưởng tích lũy cho khách hàng thường
-                        sc.call.setWaitTime(sc.call.getWaitTime() + AGING_BOOST_POINTS);
+        // --- THREAD AGING: định kỳ quét hàng đợi, cộng điểm ưu tiên cho khách hàng Thường ---
+        // Chu kỳ quét (AGING_INTERVAL_SECONDS giây thực tế) cũng được nén theo PROCESSING_SPEEDUP_FACTOR
+        // để khớp với tốc độ 5x của toàn hệ thống.
+        final long agingIntervalMachineMs = (AGING_INTERVAL_SECONDS * 1000L) / PROCESSING_SPEEDUP_FACTOR;
+        Thread agingThread = new Thread(() -> {
+            while (processedCount.get() < totalCalls) {
+                try {
+                    Thread.sleep(agingIntervalMachineMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                synchronized (lockObject) {
+                    for (SimCall sc : priorityQueue) {
+                        if (!sc.call.isVIP()) {
+                            // Cộng thêm điểm thưởng tích lũy cho khách hàng thường (dùng chung trường waitTime
+                            // của Call gốc làm nơi lưu điểm Aging Boost, giữ đúng quy ước của bản gốc)
+                            sc.call.setWaitTime(sc.call.getWaitTime() + AGING_BOOST_POINTS);
+                        }
                     }
                 }
             }
+        }, "Aging-B");
 
-            // Bước 3: Phân phối cuộc gọi cho Agent rảnh tay
-            for (int i = 0; i < NUM_AGENTS; i++) {
-                if (agentFreeTime[i] <= t) {
-                    if (!priorityQueue.isEmpty()) {
-                        
-                        // Thuật toán tìm kiếm phần tử có độ ưu tiên cao nhất trong hàng đợi
-                        int highestPriorityIndex = 0;
-                        for (int j = 1; j < priorityQueue.size(); j++) {
-                            // Tính tổng điểm ưu tiên của cuộc gọi đang xét ở vị trí j
-                            int p1 = priorityQueue.get(j).call.getPriorityScore() + priorityQueue.get(j).call.getWaitTime();
-                            
-                            // Tính tổng điểm ưu tiên của cuộc gọi tốt nhất tìm thấy trước đó
-                            int p2 = priorityQueue.get(highestPriorityIndex).call.getPriorityScore() + priorityQueue.get(highestPriorityIndex).call.getWaitTime();
-
-                            if (p1 > p2) {
-                                // Nếu cuộc gọi j có điểm ưu tiên cao hơn, ghi nhận index mới
-                                highestPriorityIndex = j;
-                            } else if (p1 == p2) {
-                                // Quy tắc bổ trợ (Tie-breaker): Nếu bằng điểm nhau, ai có thời điểm đến (arrivalTime) sớm hơn sẽ được chọn
-                                if (priorityQueue.get(j).arrivalTime < priorityQueue.get(highestPriorityIndex).arrivalTime) {
+        // --- NUM_AGENTS THREAD AGENT: mỗi thread là 1 điện thoại viên chạy song song ---
+        Thread[] agentThreads = new Thread[NUM_AGENTS];
+        for (int a = 0; a < NUM_AGENTS; a++) {
+            agentThreads[a] = new Thread(() -> {
+                while (processedCount.get() < totalCalls) {
+                    SimCall nextCall = null;
+                    synchronized (lockObject) {
+                        if (!priorityQueue.isEmpty()) {
+                            // Thuật toán tìm kiếm phần tử có độ ưu tiên cao nhất trong hàng đợi
+                            int highestPriorityIndex = 0;
+                            for (int j = 1; j < priorityQueue.size(); j++) {
+                                int p1 = priorityQueue.get(j).call.getPriorityScore() + priorityQueue.get(j).call.getWaitTime();
+                                int p2 = priorityQueue.get(highestPriorityIndex).call.getPriorityScore() + priorityQueue.get(highestPriorityIndex).call.getWaitTime();
+                                if (p1 > p2) {
                                     highestPriorityIndex = j;
+                                } else if (p1 == p2) {
+                                    // Quy tắc bổ trợ (Tie-breaker): ai có arrivalTime sớm hơn được chọn
+                                    if (priorityQueue.get(j).arrivalTime < priorityQueue.get(highestPriorityIndex).arrivalTime) {
+                                        highestPriorityIndex = j;
+                                    }
                                 }
                             }
+                            nextCall = priorityQueue.remove(highestPriorityIndex);
+                        } else {
+                            // Hàng đợi rỗng: Agent chờ (block) tối đa 50ms rồi kiểm tra lại
+                            try {
+                                lockObject.wait(50);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
                         }
+                    }
+                    if (nextCall != null) {
+                        // Xem giải thích chi tiết công thức này ở Scenario A (runDualQueueSimulation) —
+                        // dùng double, chia số thực 1000.0, không ép kiểu int để tránh mất phần thập phân.
+                        long waitMachineMs = System.currentTimeMillis() - nextCall.dispatchedAtMachineMs;
+                        nextCall.waitTime = (waitMachineMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
 
-                        // Lấy cuộc gọi tối ưu nhất ra khỏi hàng đợi để xử lý
-                        SimCall nextCall = priorityQueue.remove(highestPriorityIndex);
-                        
-                        // Tính toán thời gian chờ ảo thực tế = Thời điểm bắt đầu phục vụ (t) - Thời điểm đến (arrivalTime)
-                        nextCall.waitTime = t - nextCall.arrivalTime; 
-                        
-                        // Cập nhật mốc thời gian Agent rảnh tay tiếp theo
-                        agentFreeTime[i] = t + nextCall.handlingTime;
-                        processedCount++;
-
-                        // Tạo trễ thực tế (đã tính theo tỷ lệ nén 1:20) để hiển thị tiến trình mượt mà
-                        simulateProcessing(rand, totalCalls);
-                        printProgress(processedCount, totalCalls, "Scenario B");
+                        simulateProcessing(nextCall.handlingTime);
+                        int done = processedCount.incrementAndGet();
+                        printProgress(done, totalCalls, "Scenario B");
                     }
                 }
-            }
-            t++; // Tăng đồng hồ ảo
+            }, "Agent-B-" + a);
+        }
+
+        // Khởi động toàn bộ Dispatcher + Aging + Agent threads để chạy song song
+        dispatcherThread.start();
+        agingThread.start();
+        for (Thread t : agentThreads) t.start();
+
+        // Đợi tất cả các luồng hoàn tất
+        try {
+            dispatcherThread.join();
+            for (Thread t : agentThreads) t.join();
+            agingThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -410,7 +565,9 @@ public class Exp1_PriorityQueue {
     private void printComparativeReport(List<SimCall> datasetA, List<SimCall> datasetB) {
         // --- 1. TÍNH TOÁN CÁC CHỈ SỐ CHO KỊCH BẢN A (DUAL QUEUE) ---
         double vipAwtA = 0, regAwtA = 0, totalAwtA = 0;
-        int maxRegA = 0, maxVipA = 0;
+        // maxRegA/maxVipA dùng double (KHÔNG phải int) để khớp kiểu với waitTime (double) và không
+        // làm tròn mất phần thập phân của thời gian chờ lớn nhất.
+        double maxRegA = 0, maxVipA = 0;
         int vipCount = 0, regCount = 0;
 
         for (SimCall sc : datasetA) {
@@ -431,7 +588,7 @@ public class Exp1_PriorityQueue {
 
         // --- 2. TÍNH TOÁN CÁC CHỈ SỐ CHO KỊCH BẢN B (AGING QUEUE) ---
         double vipAwtB = 0, regAwtB = 0, totalAwtB = 0;
-        int maxRegB = 0, maxVipB = 0;
+        double maxRegB = 0, maxVipB = 0;
         for (SimCall sc : datasetB) {
             if (sc.call.isVIP()) {
                 vipAwtB += sc.waitTime;
@@ -449,12 +606,14 @@ public class Exp1_PriorityQueue {
         // --- 3. ĐÁNH GIÁ MỨC ĐỘ CẢI THIỆN CHO KHÁCH HÀNG THƯỜNG ---
         // Tỷ lệ giảm thời gian chờ trung bình cho khách thường (%)
         double regAwtImprovement = (regAwtA > 0) ? ((regAwtA - regAwtB) / regAwtA) * 100.0 : 0;
-        // Tỷ lệ giảm thời gian chờ tối đa cho khách thường (%)
-        double regMaxImprovement = (maxRegA > 0) ? ((maxRegA - maxRegB) / (double) maxRegA) * 100.0 : 0;
+        // Tỷ lệ giảm thời gian chờ tối đa cho khách thường (%) - maxRegA giờ đã là double nên không
+        // cần ép kiểu (double) như bản cũ nữa
+        double regMaxImprovement = (maxRegA > 0) ? ((maxRegA - maxRegB) / maxRegA) * 100.0 : 0;
 
         // --- 4. IN BẢNG BÁO CÁO CHI TIẾT LÊN CONSOLE ---
         System.out.println("\nSIMULATION METRICS REPORT");
-        System.out.println("  Setup: 500 calls/hour | 20% VIP | 10 Agents | Speed: Compressed 1:" + TIME_COMPRESSION_RATIO);
+        System.out.println("  Setup: " + TOTAL_CALLS_TO_GENERATE + " calls (fixed) | 20% VIP | " + NUM_AGENTS
+                + " Agents | Handling time: 30-180s real | Speed: " + PROCESSING_SPEEDUP_FACTOR + "x faster");
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
         System.out.printf("  %-45s │ %-28s │ %-28s%n",
                  "Metric Description",
@@ -475,11 +634,11 @@ public class Exp1_PriorityQueue {
 
         System.out.println("  [2] Maximum Wait Time (Max WT) - Longest single wait experienced:");
         System.out.printf("   - Regular (Non-VIP) Customers                │ %-28s │ %-28s%n",
-                formatDuration(maxRegA) + " (" + maxRegA + "s)",
-                formatDuration(maxRegB) + " (" + maxRegB + "s)");
+                formatDuration(maxRegA) + " (" + String.format("%.1f", maxRegA) + "s)",
+                formatDuration(maxRegB) + " (" + String.format("%.1f", maxRegB) + "s)");
         System.out.printf("   - VIP Customers                              │ %-28s │ %-28s%n",
-                formatDuration(maxVipA) + " (" + maxVipA + "s)",
-                formatDuration(maxVipB) + " (" + maxVipB + "s)");
+                formatDuration(maxVipA) + " (" + String.format("%.1f", maxVipA) + "s)",
+                formatDuration(maxVipB) + " (" + String.format("%.1f", maxVipB) + "s)");
 
         System.out.println("  ---------------------------------------------------------------------------------------------------------");
         System.out.printf("  Regular Customer Improvement: Average Wait Reduced by %.2f%% | Max Wait Reduced by %.2f%%%n",
@@ -497,8 +656,9 @@ public class Exp1_PriorityQueue {
             csvLines.add(String.format(Locale.US, "Average Wait Time - Regular (Non-VIP) Customers,%.2f,%.2f,%.2f%%", regAwtA, regAwtB, regAwtImprovement));
             csvLines.add(String.format(Locale.US, "Average Wait Time - VIP Customers,%.2f,%.2f,N/A", vipAwtA, vipAwtB));
             csvLines.add(String.format(Locale.US, "Average Wait Time - Overall System (All Customers),%.2f,%.2f,%.2f%%", totalAwtA, totalAwtB, (totalAwtA > 0 ? ((totalAwtA - totalAwtB)/totalAwtA)*100.0 : 0)));
-            csvLines.add(String.format(Locale.US, "Max Wait Time - Regular (Non-VIP) Customers,%d,%d,%.2f%%", maxRegA, maxRegB, regMaxImprovement));
-            csvLines.add(String.format(Locale.US, "Max Wait Time - VIP Customers,%d,%d,N/A", maxVipA, maxVipB));
+            // Max Wait Time giờ dùng %.2f (số thực) thay vì %d (số nguyên), khớp với kiểu double của maxRegA/maxVipA
+            csvLines.add(String.format(Locale.US, "Max Wait Time - Regular (Non-VIP) Customers,%.2f,%.2f,%.2f%%", maxRegA, maxRegB, regMaxImprovement));
+            csvLines.add(String.format(Locale.US, "Max Wait Time - VIP Customers,%.2f,%.2f,N/A", maxVipA, maxVipB));
             fh.writeLines(csvLines);
             System.out.println("  Data saved to: " + csvPath);
         } catch (Exception e) {
@@ -514,4 +674,6 @@ public class Exp1_PriorityQueue {
         System.out.println("     - Regular (Non-VIP) Customers AWT: " + formatDuration(regAwtB) + " | Max WT: " + formatDuration(maxRegB));
         System.out.println("     - VIP Customers AWT: " + formatDuration(vipAwtB) + " | Max WT: " + formatDuration(maxVipB));
     }
+
+    
 }
