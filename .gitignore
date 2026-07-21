@@ -9,4 +9,7 @@
 out/
 prompt.txt
 
-
+# Docs report files
+docs/report/*
+!docs/report/*.tex
+!docs/report/*.pdf
