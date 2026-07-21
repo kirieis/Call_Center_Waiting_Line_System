@@ -133,8 +133,8 @@ public class Exp2_AgingAlgorithm {
                         
                         // Tìm cuộc gọi có tổng điểm ưu tiên lớn nhất trong hàng đợi
                         for (int j = 1; j < internalQueue.size(); j++) {
-                            int p1 = internalQueue.get(j).call.getPriorityScore() + internalQueue.get(j).call.getWaitTime();
-                            int p2 = internalQueue.get(bestTargetIdx).call.getPriorityScore() + internalQueue.get(bestTargetIdx).call.getWaitTime();
+                            int p1 = internalQueue.get(j).call.getAgedPriority();
+                            int p2 = internalQueue.get(bestTargetIdx).call.getAgedPriority();
                             
                             if (p1 > p2) {
                                 bestTargetIdx = j;

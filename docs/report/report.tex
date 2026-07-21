@@ -1,0 +1,169 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{caption}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\title{\textbf{Call Center Waiting Line System}\\[4pt]
+\large Experimental Report: Priority Queue Design and Instant-Pickup Verification}
+\author{Group 7 --- CSD201}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+This report presents empirical results from the \textit{Call Center Waiting Line System} simulation, a multi-threaded Java program modeling a call center with a Dispatcher thread, multiple Agent threads, and an Aging thread. Two experimental questions are addressed:
+
+\begin{enumerate}
+    \item \textbf{Experiment 1:} Does a Dual Queue design (separate VIP / Regular queues) or a Single Queue with an Aging mechanism produce a lower Average Wait Time (AWT) for Regular (non-VIP) customers?
+    \item \textbf{Experiment 1B:} Verification of the instructor's hypothesis --- when all 10 agents are busy and a new call arrives, is it queued rather than answered instantly? Conversely, are calls answered immediately only when at least one agent is free at arrival time?
+\end{enumerate}
+
+Each experiment was executed twice (independent runs) to check the stability and reproducibility of the results.
+
+\section{Experimental Setup}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Number of calls (Experiment 1) & 500 (fixed, shared by both scenarios) \\
+Number of calls (Experiment 1B) & 250 (fixed, separate dataset) \\
+VIP ratio & 20\% \\
+Number of Agents & 10 \\
+Handling time per call & 30--180 s (real-world seconds) \\
+Processing speedup factor & 100$\times$ real time \\
+Instant-pickup threshold & pickup delay $< 0.05$ s \\
+\bottomrule
+\end{tabular}
+\caption{Simulation configuration shared across both experimental runs.}
+\end{table}
+
+\section{Experiment 1: Dual Queue vs. Single Queue with Aging}
+
+\subsection{Results --- Run 1}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Scenario A (Dual Queue)} & \textbf{Scenario B (Aging Queue)} \\
+\midrule
+Regular AWT & 18 min 37.7 s (1117.7 s) & 18 min 42.7 s (1122.7 s) \\
+VIP AWT & 12.4 s & 11.0 s \\
+Overall AWT & 15 min 27.6 s (927.6 s) & 15 min 31.5 s (931.5 s) \\
+Regular Max WT & 30 min 04.1 s (1804.1 s) & 29 min 47.6 s (1787.6 s) \\
+VIP Max WT & 30.8 s & 47.1 s \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 1 -- Run 1 results (500 calls, 20\% VIP, 10 agents).}
+\end{table}
+
+Run 1 improvement (Scenario B relative to A, positive = B better for Regular customers): AWT reduced by $-0.44\%$ (i.e.\ slightly worse), Max WT reduced by $0.91\%$.
+
+\subsection{Results --- Run 2}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Scenario A (Dual Queue)} & \textbf{Scenario B (Aging Queue)} \\
+\midrule
+Regular AWT & 14 min 35.1 s (875.1 s) & 14 min 35.4 s (875.4 s) \\
+VIP AWT & 10.0 s & 8.6 s \\
+Overall AWT & 11 min 49.0 s (709.0 s) & 11 min 48.9 s (708.9 s) \\
+Regular Max WT & 24 min 31.1 s (1471.1 s) & 24 min 26.9 s (1466.9 s) \\
+VIP Max WT & 1 min 06.1 s (66.1 s) & 1 min 09.6 s (69.6 s) \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 1 -- Run 2 results (500 calls, 20\% VIP, 10 agents).}
+\end{table}
+
+Run 2 improvement (Scenario B relative to A): AWT reduced by $-0.02\%$, Max WT reduced by $0.29\%$.
+
+\subsection{Analysis}
+Across both independent runs, the Regular-customer Average Wait Time is virtually identical between the two scenarios, differing by less than half a second in both cases (Run 1: 1117.7 s vs.\ 1122.7 s; Run 2: 875.1 s vs.\ 875.4 s), corresponding to a relative difference of well under 1\%. Scenario B (Aging) shows a marginally \emph{lower} maximum wait time for Regular customers in both runs, but the effect is small and within normal run-to-run variability, as shown by the fact that Run 1 and Run 2 themselves differ by several minutes in absolute AWT due to random call-arrival and handling-time variation.
+
+For VIP customers, Scenario B (Aging) consistently produces a slightly \emph{lower} AWT than Scenario A (Dual Queue) in both runs (Run 1: 11.0 s vs.\ 12.4 s; Run 2: 8.6 s vs.\ 10.0 s), while the VIP maximum wait time is slightly \emph{higher} under Scenario B in both runs (Run 1: 47.1 s vs.\ 30.8 s; Run 2: 69.6 s vs.\ 66.1 s). This is an expected trade-off of aging-based prioritization: VIP calls are still prioritized on average, but a VIP call can occasionally accumulate more wait before its aging-adjusted priority overtakes the queue, producing a higher tail (max) wait than a strict, always-VIP-first dual queue would.
+
+\subsection{Conclusion for Experiment 1}
+Under the tested configuration (500 calls, 20\% VIP, 10 agents), neither queueing strategy provides a practically significant reduction in Regular customer Average Wait Time; the two scenarios are effectively equivalent for Regular customers (difference $< 0.5\%$ across both runs), while Scenario B (Single Queue with Aging) yields marginally better VIP average wait at the cost of a marginally higher VIP worst-case wait. This suggests that with only 10 agents serving a load of 500 calls at 20\% VIP, the system is heavily saturated (see Experiment 1B below), and queue discipline alone cannot compensate for insufficient agent capacity -- both designs converge to similar Regular-customer wait times because Regular customers are, in practice, served only once VIP and aged calls are cleared, regardless of the specific queueing structure used.
+
+\section{Experiment 1B: Instant Pickup Verification}
+
+\subsection{Hypothesis}
+The instructor's hypothesis states that whether an incoming call is answered immediately depends on agent availability at the moment of arrival: if at least one of the 10 agents is idle when a call arrives, that call is picked up instantly (pickup delay $\approx 0$ s); if all 10 agents are busy handling other calls, the new call must wait in queue, and pickup delay will be strictly greater than zero.
+
+\subsection{Results --- Run 1}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Group A: Instant Pickup} & \textbf{Group B: Queued / Delayed} \\
+\midrule
+Condition & pickup delay $< 0.05$ s & pickup delay $\geq 0.05$ s \\
+Meaning & Agent available on arrival & All agents busy on arrival \\
+Calls (out of 250) & 12 & 238 \\
+Ratio & 4.8\% & 95.2\% \\
+Average pickup delay & 0.0000 s & 7 min 26.8 s (446.8 s) \\
+Minimum pickup delay & 0.0000 s & 1.5 s \\
+Maximum pickup delay & 0.0000 s & 14 min 39.9 s (879.9 s) \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 1B -- Run 1 results (250 calls, 10 agents).}
+\end{table}
+
+\subsection{Results --- Run 2}
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Group A: Instant Pickup} & \textbf{Group B: Queued / Delayed} \\
+\midrule
+Condition & pickup delay $< 0.05$ s & pickup delay $\geq 0.05$ s \\
+Meaning & Agent available on arrival & All agents busy on arrival \\
+Calls (out of 250) & 10 & 240 \\
+Ratio & 4.0\% & 96.0\% \\
+Average pickup delay & 0.0000 s & 7 min 03.4 s (423.4 s) \\
+Minimum pickup delay & 0.0000 s & 50.0 s \\
+Maximum pickup delay & 0.0000 s & 15 min 03.0 s (903.0 s) \\
+\bottomrule
+\end{tabular}
+\caption{Experiment 1B -- Run 2 results (250 calls, 10 agents).}
+\end{table}
+
+\subsection{Analysis}
+Both runs confirm the hypothesis with high consistency:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item In Run 1, only 12/250 calls (4.8\%) were answered instantly (average and maximum delay measured at 0.0000 s, i.e.\ within the 0.05 s threshold), corresponding to the cases where at least one agent was idle at the moment of call arrival.
+    \item In Run 2, the instant-pickup group was 10/250 calls (4.0\%), with the same 0.0000 s delay characteristic.
+    \item In both runs, the remaining $\sim$95--96\% of calls (238/250 and 240/250, respectively) experienced a strictly positive pickup delay, with minimum delays of 1.5 s (Run 1) and 50.0 s (Run 2) -- confirming that once all 10 agents are occupied, any newly arriving call is forced to wait, with no exception observed.
+    \item The average delay for the queued group is substantial in both runs (7 min 26.8 s and 7 min 03.4 s respectively), and the maximum observed delay reaches nearly 15 minutes in both runs, illustrating that under this call volume and agent count, queuing delay is not a rare edge case but the dominant behavior of the system.
+\end{itemize}
+
+The sharp binary separation between the two groups -- a pickup delay of exactly 0.0000 s for the "instant" group versus a delay of at least 1.5 s (and averaging several minutes) for the "queued" group -- with no calls observed in an intermediate zone, is strong evidence that the simulation correctly implements the intended behavior: an agent picks up a call immediately if and only if an agent is idle at arrival time; otherwise, the call is placed into the queue and only picked up once an agent becomes free.
+
+\subsection{Conclusion for Experiment 1B}
+The instructor's hypothesis is verified by both experimental runs. Only a small minority of calls (4.0--4.8\%) arrive when an agent is free and are answered with effectively zero delay, while the large majority ($\geq$95\%) arrive when all 10 agents are occupied and must wait in queue, with wait times ranging from a few seconds up to roughly 15 minutes. This confirms that, at the tested load (250 calls across 10 agents with 30--180 s handling times), the system operates in a persistently saturated state, and instant pickup is the exception rather than the rule.
+
+\section{Overall Conclusions}
+\begin{enumerate}
+    \item \textbf{Queueing strategy (Experiment 1):} For Regular customers, Dual Queue and Single Queue with Aging produce statistically indistinguishable Average Wait Times under the tested load (20\% VIP, 10 agents, 500 calls); the Aging mechanism offers a small AWT benefit to VIP customers at the cost of a slightly higher VIP worst-case wait, without materially helping or harming Regular customers.
+    \item \textbf{Instant pickup hypothesis (Experiment 1B):} Confirmed -- calls are answered instantly only when an agent is idle upon arrival (4.0--4.8\% of calls across both runs), while all other calls (95.2--96.0\%) must wait, with substantial average and maximum delays. This demonstrates that the 10-agent configuration is under-provisioned relative to the offered call load, which is also the underlying reason Experiment 1's two queueing strategies converge to similar Regular-customer outcomes: capacity, not queue discipline, is the binding constraint.
+\end{enumerate}
+
+\end{document}

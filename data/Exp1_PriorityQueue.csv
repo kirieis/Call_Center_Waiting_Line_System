@@ -1,6 +1,6 @@
 Metric Description,Scenario A (Dual Queue) (seconds),Scenario B (Aging Queue) (seconds),Improvement (%)
-Average Wait Time - Regular (Non-VIP) Customers,1163.51,559.61,51.90%
-Average Wait Time - VIP Customers,9.95,2400.76,N/A
-Average Wait Time - Overall System (All Customers),944.34,909.43,3.70%
-Max Wait Time - Regular (Non-VIP) Customers,1874.80,1030.00,45.06%
-Max Wait Time - VIP Customers,42.40,3924.10,N/A
+Average Wait Time - Regular (Non-VIP) Customers,875.14,875.36,-0.02%
+Average Wait Time - VIP Customers,10.03,8.56,N/A
+Average Wait Time - Overall System (All Customers),709.04,708.93,0.02%
+Max Wait Time - Regular (Non-VIP) Customers,1471.10,1466.90,0.29%
+Max Wait Time - VIP Customers,66.10,69.60,N/A

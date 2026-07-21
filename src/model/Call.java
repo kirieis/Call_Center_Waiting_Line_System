@@ -23,9 +23,11 @@ public class Call {
     private CallStatus status;
     private long entryTime;
 
+    private boolean allowExceedVIP = false;
+
     // --- Constants for priority score calculation (defaults, can be overridden via config) ---
-    private static int VIP_BONUS = 50;
-    private static int REPEAT_MULTIPLIER = 10;
+    private static int VIP_BONUS = 400;
+    private static int REPEAT_MULTIPLIER = 5;
 
     /**
      * Full Constructor.
@@ -54,6 +56,9 @@ public class Call {
             score += VIP_BONUS;
         }
         score += repeatCalls * REPEAT_MULTIPLIER;
+        if (!isVIP && !allowExceedVIP) {
+            score = Math.min(score, VIP_BONUS);
+        }
         return score;
     }
 
@@ -68,7 +73,11 @@ public class Call {
      * Gets aged priority score (including waitTime).
      */
     public int getAgedPriority() {
-        return priorityScore + waitTime;
+        int total = priorityScore + waitTime;
+        if (!isVIP && !allowExceedVIP) {
+            return Math.min(total, VIP_BONUS);
+        }
+        return total;
     }
 
     /**
@@ -158,6 +167,16 @@ public class Call {
 
     public void setPriorityScore(int priorityScore) {
         this.priorityScore = priorityScore;
+    }
+
+    public boolean isAllowExceedVIP() {
+        return allowExceedVIP;
+    }
+
+    public void setAllowExceedVIP(boolean allowExceedVIP) {
+        this.allowExceedVIP = allowExceedVIP;
+        // Recalculate priorityScore to apply the cap if needed
+        this.priorityScore = calculateBasePriority();
     }
 
     public CallStatus getStatus() {
