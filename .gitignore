@@ -11,5 +11,5 @@ prompt.txt
 
 # Docs report files
 docs/report/*
-!docs/report/*.tex
-!docs/report/*.pdf
+!docs/report/report.tex
+!docs/report/report.pdf
