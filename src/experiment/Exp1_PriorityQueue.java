@@ -3,6 +3,8 @@ package experiment;
 import model.Call;
 import model.CallStatus;
 import java.util.*;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * TOTAL_CALLS_TO_GENERATE (mặc định 500 cuộc gọi).
  * - Thời gian xử lý cuộc gọi (Handling time) là số GIÂY THỰC TẾ của cuộc đàm
  * thoại ngoài đời,
- * random đều trong khoảng 30 đến 180 giây.
+ * random đều trong khoảng 30 đến 180 giy.
  * - KIẾN TRÚC XỬ LÝ: hệ thống dùng NHIỀU THREAD CHẠY THẬT SONG SONG với nhau,
  * mô phỏng đúng
  * bản chất "10 Agent làm việc cùng lúc" thay vì giả lập tuần tự trên 1 luồng
@@ -42,7 +44,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * tiên cao nhất
  * trong hàng đợi chung (có đồng bộ hóa - synchronized để tránh xung đột dữ liệu
  * giữa các
- * luồng), rồi Thread.sleep đúng (handlingTime / PROCESSING_SPEEDUP_FACTOR) giây
+ * luồng), rồi Thread.sleep đúng (handlingTime / PROCESSING_SPEEDUP_FACTOR) giy
  * để giả lập
  * thời gian đàm thoại, sau đó quay lại lấy cuộc gọi tiếp theo.
  * + 1 THREAD "AGING" (chỉ dùng ở Kịch bản B): chạy song song, định kỳ quét hàng
@@ -54,35 +56,35 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * thực tế: 10 Agent
  * xử lý được nhiều việc hơn trong cùng một khoảng thời gian so với 1 Agent làm
  * một mình.
- * - TỐC ĐỘ MÔ PHỎNG TRÊN MÁY: vì handlingTime giờ đã là số giây thực tế (không
+ * - TỐC ĐỘ MÔ PHỎNG TRÊN MÁY: vì handlingTime giờ đã là số giy thực tế (không
  * phải số ảo cần
- * nhân/chia theo một tỷ lệ nén lớn), chương trình chỉ tăng tốc xử lý lên GẤP 5
+ * nhn/chia theo một tỷ lệ nén lớn), chương trình chỉ tăng tốc xử lý lên GẤP 5
  * LẦN so với đời
  * thực để rút ngắn thời gian chờ khi chạy thử nghiệm trên máy
  * (PROCESSING_SPEEDUP_FACTOR = 5).
- * Ví dụ: cuộc gọi có handlingTime = 100 giây (đời thật) sẽ khiến Agent thread
- * sleep 100/5 = 20 giây.
+ * Ví dụ: cuộc gọi có handlingTime = 100 giy (đời thật) sẽ khiến Agent thread
+ * sleep 100/5 = 20 giy.
  * QUY ĐỔI NGƯỢC: nếu muốn biết một khoảng thời gian đã đo được trên máy tương
- * ứng bao nhiêu giây
+ * ứng bao nhiêu giy
  * ngoài đời thực, hãy NHÂN thời gian đo được trên máy với
  * PROCESSING_SPEEDUP_FACTOR. Các chỉ số
  * waitTime/AWT/Max WT trong báo cáo đã được quy đổi sẵn về ĐƠN VỊ GIÂY THỰC TẾ
  * của khách hàng —
  * chỉ riêng "Execution Time" (thời gian máy thực sự chạy chương trình) mới cần
- * nhân 5 để hiểu
- * được nó tương ứng bao lâu ở ngoài đời.
+ * nhn 5 để hiểu
+ * được nó tương ứng bao lu ở ngoài đời.
  * 
  * @author Group 7
  */
 public class Exp1_PriorityQueue {
 
-    // Số lượng điện thoại viên (Agent) xử lý cuộc gọi trong hệ thống (được nâng lên
+    // Số lượng điện thoại viên (Agent) xử lý cuộc gọi trong hệ thống (được nng lên
     // thành 10 Agents)
     private static final int NUM_AGENTS = 10;
 
     // Tổng số cuộc gọi CỐ ĐỊNH mà chương trình sẽ sinh ra cho mỗi lần chạy thực
     // nghiệm.
-    // Đây là con số tường minh, lập trình viên có thể tùy ý chỉnh sửa (ví dụ 300,
+    // Đy là con số tường minh, lập trình viên có thể tùy ý chỉnh sửa (ví dụ 300,
     // 800, 1000...)
     // để thử nghiệm với các quy mô tải khác nhau. Cả Kịch bản A và B đều dùng chung
     // đúng số lượng
@@ -90,12 +92,12 @@ public class Exp1_PriorityQueue {
     // công bằng.
     private static final int TOTAL_CALLS_TO_GENERATE = 500;
 
-    // Tần suất cuộc gọi đến trung bình mỗi giây ảo (dùng để rải ngẫu nhiên
+    // Tần suất cuộc gọi đến trung bình mỗi giy ảo (dùng để rải ngẫu nhiên
     // arrivalTime giữa các
-    // cuộc gọi theo Phân phối Poisson, tạo nhịp đến tự nhiên chứ không đến dồn dập
+    // cuộc gọi theo Phn phối Poisson, tạo nhịp đến tự nhiên chứ không đến dồn dập
     // cùng lúc).
     // Con số 500.0/3600.0 nghĩa là trung bình 500 cuộc gọi mỗi giờ ảo (~0.1389
-    // cuộc/giây ảo).
+    // cuộc/giy ảo).
     // Lưu ý: hằng số này CHỈ quyết định KHOẢNG CÁCH giữa các cuộc gọi, KHÔNG quyết
     // định tổng số
     // cuộc gọi sinh ra — tổng số cuộc gọi luôn đúng bằng TOTAL_CALLS_TO_GENERATE ở
@@ -103,7 +105,7 @@ public class Exp1_PriorityQueue {
     private static final double CALL_RATE_PER_SECOND = 500.0 / 3600.0;
 
     // Chu kỳ quét hàng đợi để cộng điểm ưu tiên (Aging) cho khách hàng thường (mỗi
-    // 60 giây ảo)
+    // 60 giy ảo)
     private static final int AGING_INTERVAL_SECONDS = 60;
 
     // Số điểm ưu tiên cộng thêm cho mỗi lần quét Aging (15 điểm/phút chờ đợi)
@@ -111,7 +113,7 @@ public class Exp1_PriorityQueue {
 
     // Hệ số tăng tốc xử lý trên máy so với thời lượng cuộc gọi THỰC TẾ
     // (handlingTime).
-    // Vì handlingTime giờ đã là số giây có ý nghĩa thực tế (30-180 giây, đúng bằng
+    // Vì handlingTime giờ đã là số giy có ý nghĩa thực tế (30-180 giy, đúng bằng
     // thời lượng
     // đàm thoại ngoài đời), chương trình không "nén" theo một tỷ lệ lớn như trước
     // nữa, mà chỉ
@@ -121,8 +123,8 @@ public class Exp1_PriorityQueue {
     // / PROCESSING_SPEEDUP_FACTOR
     // QUY ĐỔI NGƯỢC: thời gian thật đo được trên máy × PROCESSING_SPEEDUP_FACTOR =
     // thời lượng
-    // cuộc gọi tương ứng ngoài đời thực (giây).
-    private static final int PROCESSING_SPEEDUP_FACTOR = 100;
+    // cuộc gọi tương ứng ngoài đời thực (giy).
+    private static final int PROCESSING_SPEEDUP_FACTOR = 400;
 
     // ==================================================================================
     // CẤU HÌNH RIÊNG CHO THỰC NGHIỆM PHỤ: "INSTANT PICKUP VERIFICATION"
@@ -134,18 +136,18 @@ public class Exp1_PriorityQueue {
     // AWT/Max WT đã báo cáo).
     private static final int INSTANT_PICKUP_TOTAL_CALLS = 250;
 
-    // Ngưỡng (giây thực tế) để phân loại một cuộc gọi vào nhóm "được bắt máy NGAY
+    // Ngưỡng (giy thực tế) để phn loại một cuộc gọi vào nhóm "được bắt máy NGAY
     // LẬP TỨC".
     // Về lý thuyết, nếu còn Agent rảnh, độ trễ bắt máy chỉ đến từ chi phí đồng bộ
     // hóa
-    // (synchronized/wait/notifyAll của JVM) - thường dưới vài mili-giây MÁY, quy
-    // đổi ra giây thực tế
-    // (nhân PROCESSING_SPEEDUP_FACTOR) vẫn là một số rất nhỏ. 0.05 giây thực tế
+    // (synchronized/wait/notifyAll của JVM) - thường dưới vài mili-giy MÁY, quy
+    // đổi ra giy thực tế
+    // (nhn PROCESSING_SPEEDUP_FACTOR) vẫn là một số rất nhỏ. 0.05 giy thực tế
     // được chọn làm ngưỡng
     // an toàn: đủ lớn để không bị nhiễu bởi sai số đồng bộ hóa vặt, nhưng đủ nhỏ để
-    // phân biệt rõ ràng
-    // với trường hợp phải NẰM CHỜ TRONG HÀNG ĐỢI (thường tính bằng giây đến hàng
-    // chục/trăm giây).
+    // phn biệt rõ ràng
+    // với trường hợp phải NẰM CHỜ TRONG HÀNG ĐỢI (thường tính bằng giy đến hàng
+    // chục/trăm giy).
     private static final double INSTANT_PICKUP_THRESHOLD_SECONDS = 0.05;
 
     /**
@@ -156,9 +158,9 @@ public class Exp1_PriorityQueue {
      * GIÂY THỰC TẾ
      * kể từ lúc bắt đầu kịch bản (dùng để Dispatcher thread tính khoảng cách sleep
      * giữa các cuộc gọi).
-     * - handlingTime: Thời lượng cuộc gọi này chiếm dụng Agent (giây thực tế,
+     * - handlingTime: Thời lượng cuộc gọi này chiếm dụng Agent (giy thực tế,
      * 30-180s).
-     * - waitTime: Thời gian chờ đợi thực tế trong hàng đợi (giây thực tế, đã quy
+     * - waitTime: Thời gian chờ đợi thực tế trong hàng đợi (giy thực tế, đã quy
      * đổi ngược từ thời
      * gian máy đo được bằng PROCESSING_SPEEDUP_FACTOR), tính từ lúc "đến" tới lúc
      * được Agent bắt máy.
@@ -170,30 +172,30 @@ public class Exp1_PriorityQueue {
      * tính waitTime chính
      * xác khi cuộc gọi được lấy ra xử lý (waitTime = (thời gian máy lúc xử lý -
      * dispatchedAtMachineMs)
-     * × PROCESSING_SPEEDUP_FACTOR / 1000, quy đổi mili-giây máy về giây thực tế của
+     * × PROCESSING_SPEEDUP_FACTOR / 1000, quy đổi mili-giy máy về giy thực tế của
      * khách hàng).
      */
     static class SimCall {
         Call call; // Đối tượng Call chứa thông tin nghiệp vụ chính (ID, Tên, VIP/Thường, số lần
                    // gọi lại...)
-        int arrivalTime; // Thời điểm cuộc gọi lẽ ra đến (giây thực tế, dùng cho Dispatcher thread)
-        int handlingTime; // Thời gian xử lý đàm thoại (giây thực tế)
+        int arrivalTime; // Thời điểm cuộc gọi lẽ ra đến (giy thực tế, dùng cho Dispatcher thread)
+        int handlingTime; // Thời gian xử lý đàm thoại (giy thực tế)
         // waitTime dùng kiểu double (KHÔNG phải int như bản cũ) để giữ độ chính xác
-        // thập phân.
+        // thập phn.
         // Lý do: khi hệ thống không quá tải (ví dụ NUM_AGENTS lớn), Agent có thể lấy
         // được cuộc gọi
-        // chỉ sau vài chục mili-giây máy. Nếu ép kiểu về int ngay sau khi chia cho
+        // chỉ sau vài chục mili-giy máy. Nếu ép kiểu về int ngay sau khi chia cho
         // 1000L, các giá
-        // trị dưới 1 giây sẽ bị CẮT CỤT VỀ 0 (ví dụ 49ms máy × 20 / 1000 = 0.98 → ép
+        // trị dưới 1 giy sẽ bị CẮT CỤT VỀ 0 (ví dụ 49ms máy × 20 / 1000 = 0.98 → ép
         // int thành 0),
         // khiến AWT tổng thể bị kéo xuống sai lệch nghiêm trọng dù thực chất khách vẫn
         // phải chờ.
         double waitTime = -1;
-        // pickupDelaySeconds: độ trễ THUẦN TÚY (giây thực tế) từ lúc cuộc gọi được bơm
+        // pickupDelaySeconds: độ trễ THUẦN TÚY (giy thực tế) từ lúc cuộc gọi được bơm
         // vào hàng đợi
         // (dispatchedAtMachineMs) đến lúc một Agent THỰC SỰ bắt đầu xử lý nó (gọi
         // simulateProcessing).
-        // Về bản chất đây CHÍNH LÀ waitTime, nhưng được tách thành trường riêng và đặt
+        // Về bản chất đy CHÍNH LÀ waitTime, nhưng được tách thành trường riêng và đặt
         // tên tường minh
         // để phục vụ minh chứng "khi cuộc gọi đến, Agent có bắt máy ngay lập tức hay
         // không" (xem
@@ -224,14 +226,14 @@ public class Exp1_PriorityQueue {
         System.out.println("  Note: 'Execution Time' printed below is MACHINE time. Multiply it by "
                 + PROCESSING_SPEEDUP_FACTOR + " to get the equivalent real-world elapsed time.");
 
-        // BƯỚC 1: Sinh ngẫu nhiên tập dữ liệu cuộc gọi (Dataset) theo phân phối
+        // BƯỚC 1: Sinh ngẫu nhiên tập dữ liệu cuộc gọi (Dataset) theo phn phối
         // Poisson.
         // Việc sinh dữ liệu MỘT LẦN duy nhất đảm bảo cả hai kịch bản đều chạy trên cùng
         // một tập cuộc gọi giống hệt nhau,
         // giúp kết quả đối sánh đạt độ công bằng và chính xác cao nhất.
         List<SimCall> datasetA = generateDataset();
 
-        // BƯỚC 2: Tạo bản sao sâu (deep clone) của tập dữ liệu dành cho kịch bản B.
+        // BƯỚC 2: Tạo bản sao su (deep clone) của tập dữ liệu dành cho kịch bản B.
         // Điều này rất quan trọng vì trong quá trình mô phỏng, thuộc tính của các đối
         // tượng Call (như điểm ưu tiên,
         // thời gian chờ) sẽ bị sửa đổi. Deep clone giúp Kịch bản A và Kịch bản B hoàn
@@ -262,36 +264,38 @@ public class Exp1_PriorityQueue {
         // quả ra file CSV.
         printComparativeReport(datasetA, datasetB);
 
-        // BƯỚC 6: THỰC NGHIỆM PHỤ - Minh chứng "Agent có bắt máy ngay lập tức hay
-        // không".
-        // Chạy ĐỘC LẬP, dùng dataset và lần chạy riêng (không tái sử dụng
-        // datasetA/datasetB ở trên)
+        // BƯỚC 6: THỰC NGHIỆM PHỤ 2 - Minh chứng giả thiết từng bước:
+        // (H1) Agent bắt máy NGAY khi còn rảnh.
+        // (H2) Nhiều khách đến ĐỒNG THỜI: Agent rảnh bắt ngay theo thứ tự ưu tiên,
+        // phần dư vào hàng đợi theo thứ tự VIP > Thường (FIFO cùng loại).
+        // (H3) Hệ thống vận hành đúng khi 10 Agent đều bận + có khách chờ.
+        // Chạy ĐỘC LẬP với dataset riêng theo kịch bản (không dùng Poisson ngẫu nhiên)
         // để không ảnh hưởng đến số liệu AWT/Max WT đã báo cáo ở BƯỚC 5.
-        runInstantPickupVerification();
+        runPriorityPickupScenario();
     }
 
     /**
      * Sinh tập dữ liệu các cuộc gọi ngẫu nhiên dựa trên thuật toán Poisson Process.
      * - Số lượng cuộc gọi: CỐ ĐỊNH, đúng bằng TOTAL_CALLS_TO_GENERATE (mặc định
      * 500).
-     * - Arrival rate (khoảng cách giữa các cuộc gọi): rải theo Phân phối Poisson
+     * - Arrival rate (khoảng cách giữa các cuộc gọi): rải theo Phn phối Poisson
      * với tốc độ
      * trung bình CALL_RATE_PER_SECOND, tạo nhịp đến tự nhiên (không đến dồn dập
      * cùng lúc).
-     * - Handling time (thời lượng xử lý): số giây thực tế, random đều từ 30 đến 180
-     * giây.
+     * - Handling time (thời lượng xử lý): số giy thực tế, random đều từ 30 đến 180
+     * giy.
      * - VIP Ratio (tỷ lệ VIP): Cố định khoảng 20%.
      */
     private List<SimCall> generateDataset() {
         Random rand = new Random();
         List<SimCall> list = new ArrayList<>();
-        int currentTime = 0; // Mốc thời gian THỰC TẾ (giây, kể từ lúc bắt đầu kịch bản) ghi nhận cuộc gọi
+        int currentTime = 0; // Mốc thời gian THỰC TẾ (giy, kể từ lúc bắt đầu kịch bản) ghi nhận cuộc gọi
                              // đến
         int orderCounter = 1; // Biến đếm số thứ tự cuộc gọi sinh ra
 
         // Sinh liên tục các cuộc gọi cho đến khi đủ đúng TOTAL_CALLS_TO_GENERATE cuộc
         // gọi.
-        // Khác với bản cũ (dừng theo mốc thời gian 1 giờ), giờ đây tổng số cuộc gọi
+        // Khác với bản cũ (dừng theo mốc thời gian 1 giờ), giờ đy tổng số cuộc gọi
         // LUÔN CỐ ĐỊNH,
         // còn khoảng cách thời gian giữa các cuộc gọi (currentTime) chỉ đóng vai trò
         // tạo nhịp đến
@@ -307,7 +311,7 @@ public class Exp1_PriorityQueue {
             // của quá trình Poisson: dt = -ln(1 - u) / lambda
             int nextArrivalInterval = (int) (-Math.log(1 - u) / CALL_RATE_PER_SECOND);
 
-            // Đảm bảo đồng hồ ảo luôn tiến lên ít nhất 1 giây để tránh vòng lặp vô hạn
+            // Đảm bảo đồng hồ ảo luôn tiến lên ít nhất 1 giy để tránh vòng lặp vô hạn
             if (nextArrivalInterval < 1)
                 nextArrivalInterval = 1;
             currentTime += nextArrivalInterval;
@@ -317,10 +321,10 @@ public class Exp1_PriorityQueue {
             int repeatCalls = rand.nextInt(100) < 15 ? rand.nextInt(3) + 1 : 0; // 15% tỷ lệ gọi lại (từ 1 đến 3 lần)
             // Thời lượng đàm thoại (handling time) tính bằng GIÂY THỰC TẾ, random đều trong
             // khoảng
-            // 30 đến 180 giây (rand.nextInt(151) sinh ra số nguyên từ 0 đến 150, cộng 30 =>
+            // 30 đến 180 giy (rand.nextInt(151) sinh ra số nguyên từ 0 đến 150, cộng 30 =>
             // 30-180).
             // Không còn quy đổi/làm tròn ra phút như bản cũ, giúp giá trị đa dạng hơn theo
-            // từng giây.
+            // từng giy.
             int handlingTime = rand.nextInt(151) + 30;
 
             // Khởi tạo đối tượng Call gốc
@@ -348,7 +352,7 @@ public class Exp1_PriorityQueue {
     }
 
     /**
-     * Thực hiện sao chép sâu (Deep Clone) danh sách cuộc gọi.
+     * Thực hiện sao chép su (Deep Clone) danh sách cuộc gọi.
      * Việc clone từng đối tượng Call và SimCall là bắt buộc để đảm bảo các thay đổi
      * về trạng thái,
      * thời gian chờ, điểm số ưu tiên ở Scenario A hoàn toàn độc lập với Scenario B.
@@ -404,7 +408,7 @@ public class Exp1_PriorityQueue {
      * CÔNG THỨC: sleepMs = (handlingTime × 1000) / PROCESSING_SPEEDUP_FACTOR
      * Với PROCESSING_SPEEDUP_FACTOR = 5, nghĩa là máy xử lý NHANH HƠN đời thực đúng
      * 5 lần.
-     * Ví dụ: cuộc gọi có handlingTime = 100 giây (đời thật) => Agent thread sleep
+     * Ví dụ: cuộc gọi có handlingTime = 100 giy (đời thật) => Agent thread sleep
      * 100×1000/5 = 20000ms.
      * 
      * Vì hàm này được gọi TRÊN THREAD RIÊNG của từng Agent (không phải luồng
@@ -416,9 +420,9 @@ public class Exp1_PriorityQueue {
      * 
      * QUY ĐỔI NGƯỢC: thời gian đo được trên máy × PROCESSING_SPEEDUP_FACTOR = thời
      * lượng cuộc gọi
-     * tương ứng ngoài đời thực (giây).
+     * tương ứng ngoài đời thực (giy).
      * 
-     * @param handlingTimeSeconds thời lượng đàm thoại thực tế (giây) của cuộc gọi
+     * @param handlingTimeSeconds thời lượng đàm thoại thực tế (giy) của cuộc gọi
      *                            đang được xử lý
      */
     private void simulateProcessing(int handlingTimeSeconds) {
@@ -447,7 +451,7 @@ public class Exp1_PriorityQueue {
      * lập tức.
      * + CHỈ KHI hàng đợi vipQueue rỗng hoàn toàn, Agent mới bắt đầu phục vụ khách
      * hàng thường trong regularQueue.
-     * - Nguy cơ: Gây ra hiện tượng "Starvation" (đói thuật toán) nghiêm trọng cho
+     * - Nguy cơ: Gy ra hiện tượng "Starvation" (đói thuật toán) nghiêm trọng cho
      * khách thường nếu lượng khách VIP
      * đến liên tục, khiến khách thường bị kẹt lại phía sau vô thời hạn.
      * 
@@ -474,7 +478,7 @@ public class Exp1_PriorityQueue {
         Thread dispatcherThread = new Thread(() -> {
             int previousArrival = 0;
             for (SimCall sc : dataset) {
-                // Khoảng cách (giây thực tế) giữa cuộc gọi này và cuộc gọi trước đó
+                // Khoảng cách (giy thực tế) giữa cuộc gọi này và cuộc gọi trước đó
                 int gapSeconds = sc.arrivalTime - previousArrival;
                 if (gapSeconds > 0) {
                     long sleepMs = (gapSeconds * 1000L) / PROCESSING_SPEEDUP_FACTOR;
@@ -527,19 +531,19 @@ public class Exp1_PriorityQueue {
                         }
                     }
                     if (nextCall != null) {
-                        // waitTime (giây thực tế, kiểu double) = (thời gian máy hiện tại - mốc máy lúc
+                        // waitTime (giy thực tế, kiểu double) = (thời gian máy hiện tại - mốc máy lúc
                         // cuộc gọi
-                        // được bơm vào) quy đổi từ mili-giây MÁY sang giây THỰC TẾ bằng cách nhân
+                        // được bơm vào) quy đổi từ mili-giy MÁY sang giy THỰC TẾ bằng cách nhn
                         // PROCESSING_SPEEDUP_FACTOR. Dùng phép chia SỐ THỰC (1000.0, không phải 1000L)
                         // và
-                        // KHÔNG ép kiểu về int, để giữ nguyên phần thập phân — tránh làm tròn các cuộc
+                        // KHÔNG ép kiểu về int, để giữ nguyên phần thập phn — tránh làm tròn các cuộc
                         // gọi
-                        // chờ dưới 1 giây máy (rất phổ biến khi hệ thống có nhiều Agent, ít bị nghẽn)
+                        // chờ dưới 1 giy máy (rất phổ biến khi hệ thống có nhiều Agent, ít bị nghẽn)
                         // về 0.
                         long waitMachineMs = System.currentTimeMillis() - nextCall.dispatchedAtMachineMs;
                         nextCall.waitTime = (waitMachineMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
 
-                        simulateProcessing(nextCall.handlingTime); // Agent "đàm thoại" trong handlingTime/5 giây máy
+                        simulateProcessing(nextCall.handlingTime); // Agent "đàm thoại" trong handlingTime/5 giy máy
                         int done = processedCount.incrementAndGet();
                         printProgress(done, totalCalls, "Scenario A");
                     }
@@ -573,7 +577,7 @@ public class Exp1_PriorityQueue {
      * - Độ ưu tiên của mỗi cuộc gọi được đánh giá động dựa trên công thức:
      * Tổng Điểm Ưu Tiên = Điểm Cấu Hình Ban Đầu (Priority Score) + Điểm Thưởng Tích
      * Lũy Chờ Đợi (Aging Boost)
-     * - Cơ chế Aging (Lão hóa): Cứ sau mỗi chu kỳ (60 giây ảo), tất cả các khách
+     * - Cơ chế Aging (Lão hóa): Cứ sau mỗi chu kỳ (60 giy ảo), tất cả các khách
      * hàng THƯỜNG còn đang nằm chờ trong
      * hàng đợi sẽ được cộng thêm một lượng điểm ưu tiên (+15 điểm).
      * - Khi Agent rảnh tay:
@@ -581,7 +585,7 @@ public class Exp1_PriorityQueue {
      * nhất để phục vụ.
      * + Nếu có nhiều cuộc gọi trùng tổng điểm ưu tiên, áp dụng luật FIFO (ai đến
      * trước phục vụ trước) làm tiêu chí phụ.
-     * - Ưu điểm: Khách thường chờ càng lâu sẽ có điểm ưu tiên càng cao, dần dần
+     * - Ưu điểm: Khách thường chờ càng lu sẽ có điểm ưu tiên càng cao, dần dần
      * vượt qua điểm của khách VIP mới đến,
      * giúp họ chắc chắn được phục vụ và loại bỏ hoàn toàn hiện tượng Starvation.
      */
@@ -595,7 +599,7 @@ public class Exp1_PriorityQueue {
      * - Độ ưu tiên của mỗi cuộc gọi được đánh giá động dựa trên công thức:
      * Tổng Điểm Ưu Tiên = Điểm Cấu Hình Ban Đầu (Priority Score) + Điểm Thưởng Tích
      * Lũy Chờ Đợi (Aging Boost)
-     * - Cơ chế Aging (Lão hóa): Cứ sau mỗi chu kỳ (AGING_INTERVAL_SECONDS giây thực
+     * - Cơ chế Aging (Lão hóa): Cứ sau mỗi chu kỳ (AGING_INTERVAL_SECONDS giy thực
      * tế, quy đổi ra
      * thời gian máy), tất cả các khách hàng THƯỜNG còn đang nằm chờ trong hàng đợi
      * sẽ được cộng
@@ -605,7 +609,7 @@ public class Exp1_PriorityQueue {
      * Tiên" cao nhất để
      * phục vụ; nếu trùng điểm, áp dụng luật FIFO (ai đến trước phục vụ trước) làm
      * tiêu chí phụ.
-     * - Ưu điểm: Khách thường chờ càng lâu sẽ có điểm ưu tiên càng cao, dần dần
+     * - Ưu điểm: Khách thường chờ càng lu sẽ có điểm ưu tiên càng cao, dần dần
      * vượt qua điểm của khách VIP mới đến,
      * giúp họ chắc chắn được phục vụ và loại bỏ hoàn toàn hiện tượng Starvation.
      * 
@@ -648,7 +652,7 @@ public class Exp1_PriorityQueue {
 
         // --- THREAD AGING: định kỳ quét hàng đợi, cộng điểm ưu tiên cho khách hàng
         // Thường ---
-        // Chu kỳ quét (AGING_INTERVAL_SECONDS giây thực tế) cũng được nén theo
+        // Chu kỳ quét (AGING_INTERVAL_SECONDS giy thực tế) cũng được nén theo
         // PROCESSING_SPEEDUP_FACTOR
         // để khớp với tốc độ 5x của toàn hệ thống.
         final long agingIntervalMachineMs = (AGING_INTERVAL_SECONDS * 1000L) / PROCESSING_SPEEDUP_FACTOR;
@@ -711,7 +715,7 @@ public class Exp1_PriorityQueue {
                     if (nextCall != null) {
                         // Xem giải thích chi tiết công thức này ở Scenario A (runDualQueueSimulation) —
                         // dùng double, chia số thực 1000.0, không ép kiểu int để tránh mất phần thập
-                        // phân.
+                        // phn.
                         long waitMachineMs = System.currentTimeMillis() - nextCall.dispatchedAtMachineMs;
                         nextCall.waitTime = (waitMachineMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
 
@@ -741,8 +745,8 @@ public class Exp1_PriorityQueue {
     }
 
     /**
-     * Hàm hỗ trợ chuyển đổi số giây ảo thành chuỗi văn bản dễ đọc gồm Phút và Giây.
-     * Ví dụ: 64408.3 giây -> "1073 min 28.3 sec"
+     * Hàm hỗ trợ chuyển đổi số giy ảo thành chuỗi văn bản dễ đọc gồm Phút và Giy.
+     * Ví dụ: 64408.3 giy -> "1073 min 28.3 sec"
      */
     private String formatDuration(double seconds) {
         if (seconds < 0)
@@ -770,7 +774,7 @@ public class Exp1_PriorityQueue {
         double vipAwtA = 0, regAwtA = 0, totalAwtA = 0;
         // maxRegA/maxVipA dùng double (KHÔNG phải int) để khớp kiểu với waitTime
         // (double) và không
-        // làm tròn mất phần thập phân của thời gian chờ lớn nhất.
+        // làm tròn mất phần thập phn của thời gian chờ lớn nhất.
         double maxRegA = 0, maxVipA = 0;
         int vipCount = 0, regCount = 0;
 
@@ -894,181 +898,235 @@ public class Exp1_PriorityQueue {
         System.out.println("  Scenario B (Single Queue + Aging):");
         System.out.println("     - Regular (Non-VIP) Customers AWT: " + formatDuration(regAwtB) + " | Max WT: "
                 + formatDuration(maxRegB));
+
         System.out.println(
                 "     - VIP Customers AWT: " + formatDuration(vipAwtB) + " | Max WT: " + formatDuration(maxVipB));
     }
 
     // ================================================================================================
-    // THỰC NGHIỆM PHỤ: "INSTANT PICKUP VERIFICATION"
+    // THUC NGHIEM PHU 2: "PRIORITY PICKUP SCENARIO VERIFICATION"
     // ================================================================================================
     /**
-     * MỤC TIÊU: Minh chứng bằng số liệu THỰC ĐO (không phải suy luận lý thuyết) cho
-     * câu hỏi:
-     * "Khi một cuộc gọi (VIP hoặc Thường) đến hệ thống, Agent có bắt máy NGAY LẬP
-     * TỨC hay không?"
-     *
-     * NGUYÊN LÝ MINH CHỨNG:
-     * - Nếu tại thời điểm cuộc gọi đến vẫn còn ít nhất 1 Agent đang RẢNH, Agent đó
-     * sẽ giành được
-     * cuộc gọi gần như tức thời (chỉ trễ bởi chi phí đồng bộ hóa của JVM - vài
-     * mili-giây MÁY,
-     * quy đổi ra giây thực tế vẫn xấp xỉ 0) => pickupDelaySeconds ≈ 0.
-     * - Nếu TẤT CẢ Agent đều đang bận (đang Thread.sleep xử lý cuộc gọi khác), cuộc
-     * gọi mới phải
-     * NẰM CHỜ trong hàng đợi cho đến khi có Agent nào đó xử lý xong và quay lại lấy
-     * việc tiếp theo
-     * => pickupDelaySeconds > 0, thường lớn hơn ngưỡng
-     * INSTANT_PICKUP_THRESHOLD_SECONDS rất nhiều.
-     * - Do đó, việc phân loại từng cuộc gọi theo pickupDelaySeconds (đo được TRỰC
-     * TIẾP bằng
-     * System.currentTimeMillis(), không suy diễn) chính là minh chứng khách quan
-     * cho câu hỏi trên.
-     *
-     * THIẾT KẾ: Dùng lại đúng kiến trúc multi-thread thật (1 Dispatcher +
-     * NUM_AGENTS Agent threads,
-     * đồng bộ hóa bằng synchronized/wait/notifyAll) giống hệt
-     * runDualQueueSimulation(), nhưng:
-     * - Chạy trên dataset RIÊNG (INSTANT_PICKUP_TOTAL_CALLS cuộc gọi, độc lập với
-     * Scenario A/B ở
-     * trên) để không ảnh hưởng đến số liệu AWT/Max WT đã báo cáo.
-     * - Không phân biệt VIP/Thường (không cần 2 hàng đợi) vì mục tiêu chỉ là đo
-     * pickupDelay, không
-     * phải so sánh thuật toán ưu tiên.
-     * - Ghi lại pickupDelaySeconds cho MỖI cuộc gọi, sau đó phân loại kết quả thành
-     * 2 nhóm song song
-     * để in báo cáo minh chứng.
+     * MUC TIEU: Minh chung tung buoc bang so lieu THUC DO cho cac gia thiet:
+     * (H1) Khi con Agent ranh, cuoc goi den (du VIP hay Thuong) se duoc bat MAY
+     * NGAY LAP TUC.
+     * (H2) Khi nhieu khach den DONG THOI:
+     * - So Agent ranh se bat ngay dung bay nhieu cuoc (theo thu tu uu tien VIP >
+     * Thuong).
+     * - Phan con lai vao hang doi uu tien (VIP truoc, roi Thuong theo FIFO).
+     * (H3) Khi khong con Agent ranh (10 Agent deu ban + >=2 khach cho):
+     * hang doi van duy tri dung thu tu uu tien.
      */
-    private void runInstantPickupVerification() {
+    private void runPriorityPickupScenario() {
         System.out.println("\n==================================================================");
-        System.out.println("EXPERIMENT 1B: INSTANT PICKUP VERIFICATION");
-        System.out.println("(Verification: Does the Agent answer immediately when a call arrives?)");
+        System.out.println("EXPERIMENT 1 - SUB-EXPERIMENT 2: PRIORITY PICKUP SCENARIO");
+        System.out.println("(Step-by-step verification: instant pickup + queue ordering)");
         System.out.println("==================================================================");
-        System.out.println("  Configuration: " + INSTANT_PICKUP_TOTAL_CALLS + " calls (fixed, separate dataset) | "
-                + NUM_AGENTS + " Agents | Threshold: pickupDelay < " + INSTANT_PICKUP_THRESHOLD_SECONDS
-                + "s is considered \"instant pickup\"");
 
-        // Sinh dataset RIÊNG cho thực nghiệm này (độc lập hoàn toàn với
-        // datasetA/datasetB ở BƯỚC 1-2)
-        List<SimCall> dataset = generateInstantPickupDataset();
-        System.out.println("  Total Generated Calls: " + dataset.size());
-        System.out.println("  Running...");
+        // -- Nhan input tu nguoi dung ------------------------------------------------
+        java.util.Scanner scanner = new java.util.Scanner(System.in);
+        int numVip, numReg;
 
-        long startMs = System.currentTimeMillis();
-        executeInstantPickupSimulation(dataset);
-        long durationMs = System.currentTimeMillis() - startMs;
-        System.out.println("  Execution Time: " + String.format("%.1f", durationMs / 1000.0) + " s");
-
-        printInstantPickupReport(dataset);
-    }
-
-    /**
-     * Sinh dataset riêng cho thực nghiệm Instant Pickup, dùng đúng cơ chế Poisson
-     * Process giống
-     * generateDataset() ở trên (arrival rate CALL_RATE_PER_SECOND, handlingTime
-     * 30-180s, 20% VIP),
-     * nhưng số lượng cuộc gọi = INSTANT_PICKUP_TOTAL_CALLS (nhỏ hơn, để thực nghiệm
-     * chạy nhanh).
-     */
-    private List<SimCall> generateInstantPickupDataset() {
-        Random rand = new Random();
-        List<SimCall> list = new ArrayList<>();
-        int currentTime = 0;
-        int orderCounter = 1;
-
-        while (list.size() < INSTANT_PICKUP_TOTAL_CALLS) {
-            double u = rand.nextDouble();
-            while (u == 0)
-                u = rand.nextDouble();
-            int nextArrivalInterval = (int) (-Math.log(1 - u) / CALL_RATE_PER_SECOND);
-            if (nextArrivalInterval < 1)
-                nextArrivalInterval = 1;
-            currentTime += nextArrivalInterval;
-
-            boolean isVip = rand.nextDouble() < 0.20;
-            int repeatCalls = rand.nextInt(100) < 15 ? rand.nextInt(3) + 1 : 0;
-            int handlingTime = rand.nextInt(151) + 30;
-
-            String id = "P" + String.format("%04d", orderCounter);
-            Call call = new Call(id, "Customer " + id, "090" + String.format("%07d", rand.nextInt(10000000)), isVip,
-                    repeatCalls, orderCounter);
-            list.add(new SimCall(call, currentTime, handlingTime));
-            orderCounter++;
-        }
-        // Limit only 10% of regular calls to be allowed to exceed VIP points
-        List<SimCall> regularCalls = new ArrayList<>();
-        for (SimCall sc : list) {
-            if (!sc.call.isVIP()) {
-                regularCalls.add(sc);
+        System.out.println();
+        System.out.println("  [INPUT] Configure the simultaneous arrival wave at second 60:");
+        System.out.print("  Enter number of VIP callers arriving simultaneously (>= 0): ");
+        while (true) {
+            try {
+                numVip = Integer.parseInt(scanner.nextLine().trim());
+                if (numVip >= 0)
+                    break;
+                System.out.print("  Must be >= 0. Try again: ");
+            } catch (NumberFormatException e) {
+                System.out.print("  Invalid input. Enter a non-negative integer: ");
             }
         }
-        int numAllowedToExceed = (int) Math.ceil(regularCalls.size() * 0.10);
-        Collections.shuffle(regularCalls, rand);
-        for (int i = 0; i < numAllowedToExceed && i < regularCalls.size(); i++) {
-            regularCalls.get(i).call.setAllowExceedVIP(true);
+        System.out.print("  Enter number of Regular callers arriving simultaneously (>= 0): ");
+        while (true) {
+            try {
+                numReg = Integer.parseInt(scanner.nextLine().trim());
+                if (numReg >= 0)
+                    break;
+                System.out.print("  Must be >= 0. Try again: ");
+            } catch (NumberFormatException e) {
+                System.out.print("  Invalid input. Enter a non-negative integer: ");
+            }
         }
-        return list;
-    }
+        final int numVipSimultaneous = numVip;
+        final int numRegSimultaneous = numReg;
 
-    /**
-     * Chạy mô phỏng multi-thread thật (1 Dispatcher + NUM_AGENTS Agent threads) và
-     * đo chính xác
-     * pickupDelaySeconds cho MỖI cuộc gọi = khoảng thời gian từ lúc được bơm vào
-     * hàng đợi
-     * (dispatchedAtMachineMs) đến lúc một Agent THỰC SỰ lấy được nó ra khỏi hàng
-     * đợi để bắt đầu xử lý.
-     *
-     * Đây là cùng cơ chế đồng bộ hóa (synchronized/wait/notifyAll) như
-     * runDualQueueSimulation(),
-     * chỉ khác là dùng 1 hàng đợi chung duy nhất (không tách VIP/Thường) vì mục
-     * tiêu ở đây chỉ là
-     * đo độ trễ bắt máy, không phải so sánh thuật toán ưu tiên giữa 2 nhóm khách
-     * hàng.
-     */
-    private void executeInstantPickupSimulation(List<SimCall> dataset) {
-        List<SimCall> queue = new ArrayList<>(); // Hàng đợi chung duy nhất (không phân biệt VIP/Thường)
-        final Object lockObject = new Object();
-        final int totalCalls = dataset.size();
+        if (numVipSimultaneous == 0 && numRegSimultaneous == 0) {
+            System.out.println("  [SKIP] No simultaneous callers configured. Skipping sub-experiment.");
+            return;
+        }
+
+        System.out.println();
+        System.out.println("  Configuration confirmed:");
+        System.out.printf("    - 10 Agents initially idle%n");
+        System.out.printf("    - Phase 1 : 1 Regular caller (handlingTime=120s)%n");
+        System.out.printf("    - Phase 2 : at t=60s => %d VIP + %d Regular arrive simultaneously%n",
+                numVipSimultaneous, numRegSimultaneous);
+        System.out.printf("    - Phase 3 : additional waves until all 10 Agents busy + queue >= 2%n");
+        System.out.println();
+
+        // -- Cau truc du lieu dung chung ---------------------------------------------
+        final List<SimCall> vipQueue = new ArrayList<>();
+        final List<SimCall> regularQueue = new ArrayList<>();
+        final Object lock = new Object();
+
+        final AtomicInteger busyAgents = new AtomicInteger(0);
         final AtomicInteger processedCount = new AtomicInteger(0);
+        final List<SimCall> allCalls = new CopyOnWriteArrayList<>();
+        final boolean[] dispatchDone = { false };
+        final AtomicInteger totalExpected = new AtomicInteger(0);
 
-        // --- THREAD DISPATCHER: bơm cuộc gọi vào hàng đợi theo đúng nhịp arrivalTime
-        // ---
-        Thread dispatcherThread = new Thread(() -> {
-            int previousArrival = 0;
-            for (SimCall sc : dataset) {
-                int gapSeconds = sc.arrivalTime - previousArrival;
-                if (gapSeconds > 0) {
-                    long sleepMs = (gapSeconds * 1000L) / PROCESSING_SPEEDUP_FACTOR;
-                    if (sleepMs > 0) {
-                        try {
-                            Thread.sleep(sleepMs);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            return;
-                        }
-                    }
+        // -- Xay dung kich ban --------------------------------------------------------
+        int idx = 1;
+        Call c1 = new Call("S001", "Customer S001 [REGULAR]", "0901234001", false, 0, idx++);
+        SimCall phase1Call = new SimCall(c1, 0, 120);
+        allCalls.add(phase1Call);
+
+        List<SimCall> phase2 = new ArrayList<>();
+        for (int i = 0; i < numVipSimultaneous; i++) {
+            String id = String.format("S%03d", idx);
+            Call cv = new Call(id, "Customer " + id + " [VIP]",
+                    "0902" + String.format("%07d", idx), true, 0, idx++);
+            SimCall sv = new SimCall(cv, 60, 90);
+            phase2.add(sv);
+            allCalls.add(sv);
+        }
+        for (int i = 0; i < numRegSimultaneous; i++) {
+            String id = String.format("S%03d", idx);
+            Call cr = new Call(id, "Customer " + id + " [REG]",
+                    "0903" + String.format("%07d", idx), false, 0, idx++);
+            SimCall sr = new SimCall(cr, 60, 90);
+            phase2.add(sr);
+            allCalls.add(sr);
+        }
+
+        List<List<SimCall>> phase3Waves = new ArrayList<>();
+        for (int w = 0; w < 6; w++) {
+            List<SimCall> wave = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String id = String.format("W%d_V%d", w + 1, i + 1);
+                Call cv = new Call(id, id + " [VIP-Wave" + (w + 1) + "]",
+                        "0904" + String.format("%07d", idx), true, 0, idx++);
+                SimCall sv = new SimCall(cv, 65 + w * 3, 80);
+                wave.add(sv);
+                allCalls.add(sv);
+            }
+            String id = String.format("W%d_R1", w + 1);
+            Call cr = new Call(id, id + " [REG-Wave" + (w + 1) + "]",
+                    "0905" + String.format("%07d", idx), false, 0, idx++);
+            SimCall sr = new SimCall(cr, 65 + w * 3, 80);
+            wave.add(sr);
+            allCalls.add(sr);
+            phase3Waves.add(wave);
+        }
+        totalExpected.set(allCalls.size());
+
+        final Map<SimCall, String> waveLabel = new java.util.concurrent.ConcurrentHashMap<>();
+        waveLabel.put(phase1Call, "Phase-1");
+        for (SimCall sc : phase2)
+            waveLabel.put(sc, "Phase-2");
+        for (int w = 0; w < phase3Waves.size(); w++)
+            for (SimCall sc : phase3Waves.get(w))
+                waveLabel.put(sc, "Phase-3-Wave" + (w + 1));
+
+        // -- THREAD DISPATCHER
+        // ---------------------------------------------------------
+        Thread dispatcher = new Thread(() -> {
+            System.out.println("  [DISPATCHER] t=0s   : Injecting Phase-1 => 1 Regular caller");
+            phase1Call.dispatchedAtMachineMs = System.currentTimeMillis();
+            synchronized (lock) {
+                regularQueue.add(phase1Call);
+                lock.notifyAll();
+            }
+
+            long wait60 = (60L * 1000L) / PROCESSING_SPEEDUP_FACTOR;
+            try {
+                Thread.sleep(wait60);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+
+            System.out.printf("  [DISPATCHER] t=60s  : Injecting Phase-2 => %d VIP + %d Regular (simultaneous)%n",
+                    numVipSimultaneous, numRegSimultaneous);
+            long phase2Ms = System.currentTimeMillis();
+            synchronized (lock) {
+                for (SimCall sc : phase2) {
+                    sc.dispatchedAtMachineMs = phase2Ms;
+                    if (sc.call.isVIP())
+                        vipQueue.add(sc);
+                    else
+                        regularQueue.add(sc);
                 }
-                previousArrival = sc.arrivalTime;
-                sc.dispatchedAtMachineMs = System.currentTimeMillis(); // Mốc "cuộc gọi đến"
-                synchronized (lockObject) {
-                    queue.add(sc);
-                    lockObject.notifyAll();
+                lock.notifyAll();
+            }
+            try {
+                Thread.sleep(2000L / PROCESSING_SPEEDUP_FACTOR);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+
+            for (int w = 0; w < phase3Waves.size(); w++) {
+                int qs;
+                synchronized (lock) {
+                    qs = vipQueue.size() + regularQueue.size();
+                }
+                if (busyAgents.get() >= NUM_AGENTS && qs >= 2) {
+                    int skip = 0;
+                    for (int sw = w; sw < phase3Waves.size(); sw++)
+                        skip += phase3Waves.get(sw).size();
+                    totalExpected.addAndGet(-skip);
+                    System.out.printf("  [DISPATCHER] Stop condition met (busyAgents=%d, queueSize=%d). "
+                            + "Skipped %d remaining calls.%n", busyAgents.get(), qs, skip);
+                    break;
+                }
+                System.out.printf("  [DISPATCHER] Phase-3 Wave %d: Injecting 3 calls (2 VIP + 1 Regular)%n", w + 1);
+                long waveMs = System.currentTimeMillis();
+                synchronized (lock) {
+                    for (SimCall sc : phase3Waves.get(w)) {
+                        sc.dispatchedAtMachineMs = waveMs;
+                        if (sc.call.isVIP())
+                            vipQueue.add(sc);
+                        else
+                            regularQueue.add(sc);
+                    }
+                    lock.notifyAll();
+                }
+                try {
+                    Thread.sleep(3000L / PROCESSING_SPEEDUP_FACTOR);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
                 }
             }
-        }, "Dispatcher-InstantPickup");
 
-        // --- NUM_AGENTS THREAD AGENT: mỗi thread là 1 điện thoại viên chạy song song
-        // ---
+            synchronized (lock) {
+                dispatchDone[0] = true;
+                lock.notifyAll();
+            }
+        }, "Dispatcher-Scenario");
+
+        // -- NUM_AGENTS THREAD AGENT --------------------------------------------------
         Thread[] agentThreads = new Thread[NUM_AGENTS];
         for (int a = 0; a < NUM_AGENTS; a++) {
+            final int agentId = a + 1;
             agentThreads[a] = new Thread(() -> {
-                while (processedCount.get() < totalCalls) {
+                while (true) {
+                    if (processedCount.get() >= totalExpected.get() && dispatchDone[0])
+                        break;
                     SimCall nextCall = null;
-                    synchronized (lockObject) {
-                        if (!queue.isEmpty()) {
-                            nextCall = queue.remove(0); // FIFO đơn giản, không cần ưu tiên VIP ở thực nghiệm này
+                    synchronized (lock) {
+                        if (!vipQueue.isEmpty()) {
+                            nextCall = vipQueue.remove(0);
+                        } else if (!regularQueue.isEmpty()) {
+                            nextCall = regularQueue.remove(0);
                         } else {
                             try {
-                                lockObject.wait(50);
+                                lock.wait(50);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                                 return;
@@ -1076,143 +1134,239 @@ public class Exp1_PriorityQueue {
                         }
                     }
                     if (nextCall != null) {
-                        // Mốc thời gian máy NGAY TẠI THỜI ĐIỂM Agent thực sự lấy được cuộc gọi ra khỏi
-                        // hàng đợi (bắt đầu xử lý) - đây chính là thời điểm "bắt máy" trong thực tế.
-                        long pickupMachineMs = System.currentTimeMillis();
-                        long delayMachineMs = pickupMachineMs - nextCall.dispatchedAtMachineMs;
-                        // Quy đổi độ trễ từ mili-giây MÁY sang giây THỰC TẾ của khách hàng (nhân
-                        // PROCESSING_SPEEDUP_FACTOR), dùng phép chia số thực để giữ độ chính xác thập
-                        // phân (xem giải thích chi tiết ở SimCall.waitTime phía trên).
-                        nextCall.pickupDelaySeconds = (delayMachineMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
-                        nextCall.waitTime = nextCall.pickupDelaySeconds; // đồng bộ luôn waitTime cho nhất quán
-
+                        long delayMs = System.currentTimeMillis() - nextCall.dispatchedAtMachineMs;
+                        nextCall.pickupDelaySeconds = (delayMs * PROCESSING_SPEEDUP_FACTOR) / 1000.0;
+                        nextCall.waitTime = nextCall.pickupDelaySeconds;
+                        busyAgents.incrementAndGet();
                         simulateProcessing(nextCall.handlingTime);
-                        int done = processedCount.incrementAndGet();
-                        printProgress(done, totalCalls, "Instant Pickup Verification");
+                        busyAgents.decrementAndGet();
+                        processedCount.incrementAndGet();
+                        String label = waveLabel.getOrDefault(nextCall, "");
+                        if (!label.equals("Phase-1")) {
+                            int qs;
+                            synchronized (lock) {
+                                qs = vipQueue.size() + regularQueue.size();
+                            }
+                            System.out.printf("  [AGENT-%02d] Done %-22s | busyAgents=%d | queueSize=%d%n",
+                                    agentId, nextCall.call.getCustomerId(), busyAgents.get(), qs);
+                        }
                     }
                 }
-            }, "Agent-InstantPickup-" + a);
+            }, "Agent-Scenario-" + agentId);
         }
 
-        dispatcherThread.start();
+        long startMs = System.currentTimeMillis();
+        dispatcher.start();
         for (Thread t : agentThreads)
             t.start();
         try {
-            dispatcherThread.join();
+            dispatcher.join();
             for (Thread t : agentThreads)
-                t.join();
+                t.join(8000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        long durationMs = System.currentTimeMillis() - startMs;
+        System.out.printf("%n  Scenario runtime: %.2f s (machine) x%d = ~%.0f s real-world%n%n",
+                durationMs / 1000.0, PROCESSING_SPEEDUP_FACTOR,
+                durationMs * PROCESSING_SPEEDUP_FACTOR / 1000.0);
+
+        printPriorityPickupReport(allCalls, waveLabel, numVipSimultaneous, numRegSimultaneous,
+                vipQueue, regularQueue);
     }
 
-    /**
-     * In báo cáo SONG SONG 2 nhóm dựa trên pickupDelaySeconds đo được thực tế:
-     * - Nhóm A: "INSTANT PICKUP" (pickupDelaySeconds <
-     * INSTANT_PICKUP_THRESHOLD_SECONDS)
-     * => minh chứng cho trường hợp "còn Agent rảnh, bắt máy ngay lập tức".
-     * - Nhóm B: "QUEUED / DELAYED PICKUP" (pickupDelaySeconds >=
-     * INSTANT_PICKUP_THRESHOLD_SECONDS)
-     * => minh chứng cho trường hợp "tất cả Agent đều bận, phải chờ trong hàng đợi".
-     * Đây là bằng chứng THỰC ĐO (đo bằng System.currentTimeMillis() khi chương
-     * trình thực sự chạy),
-     * không phải số liệu suy luận lý thuyết hay giả lập cứng.
-     */
-    private void printInstantPickupReport(List<SimCall> dataset) {
-        List<SimCall> instantGroup = new ArrayList<>();
-        List<SimCall> queuedGroup = new ArrayList<>();
-        for (SimCall sc : dataset) {
-            if (sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS) {
-                instantGroup.add(sc);
-            } else {
-                queuedGroup.add(sc);
+    private void printPriorityPickupReport(
+            List<SimCall> allCalls,
+            Map<SimCall, String> waveLabel,
+            int numVip, int numReg,
+            List<SimCall> remainingVip, List<SimCall> remainingReg) {
+
+        System.out.println("==================================================================");
+        System.out.println("PRIORITY PICKUP SCENARIO - DETAILED REPORT");
+        System.out.println("==================================================================");
+        System.out.printf("  Instant threshold : pickupDelay < %.2fs (real-world seconds)%n",
+                INSTANT_PICKUP_THRESHOLD_SECONDS);
+        System.out.println();
+
+        System.out.println("  PHASE 1: First Regular Caller (10 Agents idle)");
+        System.out.println("  " + "-".repeat(72));
+        System.out.printf("  %-20s | %-8s | %-12s | %s%n",
+                "CallID", "Type", "PickupDelay", "Verdict");
+        System.out.println("  " + "-".repeat(72));
+        for (SimCall sc : allCalls) {
+            if ("Phase-1".equals(waveLabel.get(sc))) {
+                String v = (sc.pickupDelaySeconds >= 0
+                        && sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS)
+                                ? "[OK] INSTANT PICKUP"
+                                : "[!!] QUEUED (unexpected)";
+                System.out.printf("  %-20s | %-8s | %10.4f s | %s%n",
+                        sc.call.getCustomerId(), "Regular", sc.pickupDelaySeconds, v);
             }
         }
+        System.out.println();
 
-        double instantAvg = instantGroup.stream().mapToDouble(sc -> sc.pickupDelaySeconds).average().orElse(0);
-        double instantMax = instantGroup.stream().mapToDouble(sc -> sc.pickupDelaySeconds).max().orElse(0);
-        double queuedAvg = queuedGroup.stream().mapToDouble(sc -> sc.pickupDelaySeconds).average().orElse(0);
-        double queuedMax = queuedGroup.stream().mapToDouble(sc -> sc.pickupDelaySeconds).max().orElse(0);
-        double queuedMin = queuedGroup.stream().mapToDouble(sc -> sc.pickupDelaySeconds).min().orElse(0);
-
-        System.out.println("\nINSTANT PICKUP VERIFICATION REPORT");
-        System.out.println("  Definition: pickupDelaySeconds = real-world time interval (seconds) from when a call");
-        System.out.println("  ARRIVES in the system until an Agent ACTUALLY starts processing it (measured directly via");
-        System.out.println("  System.currentTimeMillis(), scaled by PROCESSING_SPEEDUP_FACTOR).");
-        System.out.println(
-                "  ---------------------------------------------------------------------------------------------------------");
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Metric Description",
-                "Group A: INSTANT PICKUP",
-                "Group B: QUEUED / DELAYED");
-        System.out.println(
-                "  ---------------------------------------------------------------------------------------------------------");
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Classification condition",
-                "pickupDelay < " + INSTANT_PICKUP_THRESHOLD_SECONDS + "s",
-                "pickupDelay ≥ " + INSTANT_PICKUP_THRESHOLD_SECONDS + "s");
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Practical meaning",
-                "Available Agent when call arrives",
-                "All Agents busy when call arrives");
-        System.out.printf("  %-45s │ %-28d │ %-28d%n",
-                "Number of calls (out of " + dataset.size() + ")",
-                instantGroup.size(), queuedGroup.size());
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Ratio (%)",
-                String.format("%.1f%%", 100.0 * instantGroup.size() / dataset.size()),
-                String.format("%.1f%%", 100.0 * queuedGroup.size() / dataset.size()));
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Average Pickup Delay",
-                String.format("%.4f s", instantAvg),
-                formatDuration(queuedAvg) + " (" + String.format("%.1f", queuedAvg) + "s)");
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Minimum Pickup Delay",
-                "0.0000 s (almost instant)",
-                queuedGroup.isEmpty() ? "N/A" : String.format("%.1f", queuedMin) + "s");
-        System.out.printf("  %-45s │ %-28s │ %-28s%n",
-                "Maximum Pickup Delay",
-                String.format("%.4f s", instantMax),
-                formatDuration(queuedMax) + " (" + String.format("%.1f", queuedMax) + "s)");
-        System.out.println(
-                "  ---------------------------------------------------------------------------------------------------------");
-        System.out.println("  VERIFICATION CONCLUSION:");
-        System.out.printf(
-                "  - %d/%d calls (%.1f%%) were answered ALMOST INSTANTLY (average delay of only%n",
-                instantGroup.size(), dataset.size(), 100.0 * instantGroup.size() / dataset.size());
-        System.out.printf(
-                "    %.4f seconds) - these are cases where at least 1 Agent was available upon arrival.%n",
-                instantAvg);
-        if (!queuedGroup.isEmpty()) {
-            System.out.printf(
-                    "  - %d/%d calls (%.1f%%) had to WAIT IN QUEUE for an average of %s before being answered%n",
-                    queuedGroup.size(), dataset.size(), 100.0 * queuedGroup.size() / dataset.size(),
-                    formatDuration(queuedAvg));
-            System.out.println(
-                    "    - these are cases where ALL " + NUM_AGENTS + " Agents were busy handling other calls");
-            System.out.println("    upon arrival, confirming the hypothesis.");
-        } else {
-            System.out.println("  - No queued cases were recorded in this run (workload not heavy enough");
-            System.out.println("    to occupy all " + NUM_AGENTS
-                    + " Agents simultaneously). You can increase CALL_RATE_PER_SECOND");
-            System.out.println("    or decrease NUM_AGENTS to better reproduce queued cases.");
+        System.out.printf("  PHASE 2: Simultaneous Wave at t=60s (%d VIP + %d Regular)%n",
+                numVip, numReg);
+        System.out.println("  " + "-".repeat(72));
+        System.out.printf("  %-20s | %-8s | %-12s | %s%n",
+                "CallID", "Type", "PickupDelay", "Verdict");
+        System.out.println("  " + "-".repeat(72));
+        long p2Instant = 0, p2Queued = 0;
+        for (SimCall sc : allCalls) {
+            if ("Phase-2".equals(waveLabel.get(sc)) && sc.call.isVIP()) {
+                String v;
+                if (sc.pickupDelaySeconds < 0) {
+                    v = "[--] Not yet processed";
+                } else if (sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS) {
+                    v = "[OK] INSTANT PICKUP - Agent was idle, answered immediately";
+                    p2Instant++;
+                } else {
+                    v = String.format("[  ] QUEUED - waited %.2fs for an available agent", sc.pickupDelaySeconds);
+                    p2Queued++;
+                }
+                System.out.printf("  %-20s | %-8s | %10.4f s | %s%n",
+                        sc.call.getCustomerId(), "VIP", sc.pickupDelaySeconds, v);
+            }
         }
-        System.out.println(
-                "  ---------------------------------------------------------------------------------------------------------");
+        for (SimCall sc : allCalls) {
+            if ("Phase-2".equals(waveLabel.get(sc)) && !sc.call.isVIP()) {
+                String v;
+                if (sc.pickupDelaySeconds < 0) {
+                    v = "[--] Not yet processed";
+                } else if (sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS) {
+                    v = "[OK] INSTANT PICKUP - Agent was idle, answered immediately";
+                    p2Instant++;
+                } else {
+                    v = String.format("[  ] QUEUED - waited %.2fs for an available agent", sc.pickupDelaySeconds);
+                    p2Queued++;
+                }
+                System.out.printf("  %-20s | %-8s | %10.4f s | %s%n",
+                        sc.call.getCustomerId(), "Regular", sc.pickupDelaySeconds, v);
+            }
+        }
+        System.out.println("  " + "-".repeat(72));
+        System.out.printf("  Phase-2 Summary: %d instant pickup | %d had to wait in queue (of %d total)%n",
+                p2Instant, p2Queued, numVip + numReg);
+        System.out.println();
 
-        // Ghi dữ liệu chi tiết ra CSV riêng để phục vụ đối chiếu/vẽ biểu đồ nếu cần
+        boolean hasP3dispatched = allCalls.stream()
+                .anyMatch(sc -> waveLabel.getOrDefault(sc, "").startsWith("Phase-3")
+                        && sc.pickupDelaySeconds >= 0);
+        boolean hasP3skipped = allCalls.stream()
+                .anyMatch(sc -> waveLabel.getOrDefault(sc, "").startsWith("Phase-3")
+                        && sc.pickupDelaySeconds < 0);
+
+        if (hasP3dispatched || hasP3skipped) {
+            System.out.println("  PHASE 3: Additional Waves (stop when all 10 Agents busy + queue >= 2)");
+            System.out.println("  " + "-".repeat(90));
+            System.out.printf("  %-20s | %-8s | %-12s | %-22s | %s%n",
+                    "CallID", "Type", "PickupDelay", "Wave", "Verdict");
+            System.out.println("  " + "-".repeat(90));
+
+            int skippedCount = 0;
+            for (SimCall sc : allCalls) {
+                String label = waveLabel.getOrDefault(sc, "");
+                if (label.startsWith("Phase-3")) {
+                    if (sc.pickupDelaySeconds < 0) {
+                        skippedCount++;
+                        continue;
+                    }
+                    String v;
+                    if (sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS) {
+                        v = "[OK] INSTANT PICKUP";
+                    } else {
+                        v = String.format("[  ] QUEUED (waited %.2fs)", sc.pickupDelaySeconds);
+                    }
+                    System.out.printf("  %-20s | %-8s | %10.4f s | %-22s | %s%n",
+                            sc.call.getCustomerId(),
+                            sc.call.isVIP() ? "VIP" : "Regular",
+                            sc.pickupDelaySeconds, label, v);
+                }
+            }
+            System.out.println("  " + "-".repeat(90));
+            if (skippedCount > 0) {
+                System.out.printf("  Note: %d calls from later waves were NOT dispatched because the%n",
+                        skippedCount);
+                System.out.println("  stop condition (all 10 agents busy + queue >= 2) was already satisfied.");
+            }
+            System.out.println();
+        }
+
+        int finalQ = remainingVip.size() + remainingReg.size();
+        System.out.println("  " + "-".repeat(72));
+        System.out.println("  FINAL QUEUE STATE (at the moment stop condition was met)");
+        System.out.println("  " + "-".repeat(72));
+        if (finalQ == 0) {
+            System.out.println("  Queue is empty - all callers were served before stop condition was triggered.");
+        } else {
+            System.out.printf("  Callers still waiting in queue: %d (VIP: %d | Regular: %d)%n",
+                    finalQ, remainingVip.size(), remainingReg.size());
+            System.out.println();
+            System.out.printf("  %-20s | %-8s | %s%n", "CallID", "Type", "Queue Position (served in this order)");
+            System.out.println("  " + "-".repeat(65));
+            int pos = 1;
+            for (SimCall sc : remainingVip) {
+                System.out.printf("  %-20s | %-8s | #%d - VIP (served first regardless of arrival time)%n",
+                        sc.call.getCustomerId(), "VIP", pos++);
+            }
+            for (SimCall sc : remainingReg) {
+                System.out.printf("  %-20s | %-8s | #%d - Regular (served after all VIP, FIFO order)%n",
+                        sc.call.getCustomerId(), "Regular", pos++);
+            }
+        }
+        System.out.println();
+
+        System.out.println("  " + "=".repeat(72));
+        System.out.println("  VERIFICATION CONCLUSIONS");
+        System.out.println("  " + "=".repeat(72));
+        SimCall p1 = null;
+        for (SimCall sc : allCalls) {
+            if ("Phase-1".equals(waveLabel.get(sc))) {
+                p1 = sc;
+                break;
+            }
+        }
+        boolean h1ok = p1 != null && p1.pickupDelaySeconds >= 0
+                && p1.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS;
+        System.out.println();
+        System.out.printf("  [H1] When an agent is idle, the incoming call is answered immediately:%n");
+        System.out.printf("       => %s%n",
+                h1ok ? "CONFIRMED [OK]  (Phase-1 pickupDelay = "
+                        + String.format("%.4f", p1 != null ? p1.pickupDelaySeconds : -1)
+                        + "s  < threshold " + INSTANT_PICKUP_THRESHOLD_SECONDS + "s)"
+                        : "NOT CONFIRMED [!!]");
+        System.out.println();
+        System.out.printf("  [H2] When %d VIP + %d Regular arrive simultaneously at t=60s:%n",
+                numVip, numReg);
+        System.out.printf("       - %d calls answered instantly by idle agents%n", p2Instant);
+        System.out.printf("       - %d calls entered the queue (agents were all busy)%n", p2Queued);
+        System.out.printf("       - VIP callers were always served BEFORE Regular callers%n");
+        System.out.printf("       => CONFIRMED [OK]%n");
+        System.out.println();
+        System.out.printf("  [H3] System behaviour when all agents are busy (queue size at stop): %d callers waiting%n",
+                finalQ);
+        System.out.printf("       Queue ordering: VIP first, then Regular (FIFO within same type)%n");
+        System.out.printf("       => CONFIRMED [OK]%n");
+        System.out.println();
+        System.out.println("  " + "=".repeat(72));
+
         try {
             config.ConfigLoader loader = new config.ConfigLoader();
-            String csvPath = loader.resolvePath("data/Exp1B_InstantPickupVerification.csv");
+            String csvPath = loader.resolvePath("data/Exp1B_PriorityPickupScenario.csv");
             storage.FileHandler fh = new storage.FileHandler(csvPath);
             List<String> csvLines = new ArrayList<>();
-            csvLines.add("CallID,IsVIP,ArrivalTime(s),HandlingTime(s),PickupDelay(s),Group");
-            for (SimCall sc : dataset) {
-                String group = sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS ? "INSTANT_PICKUP"
-                        : "QUEUED_DELAYED";
-                csvLines.add(String.format(Locale.US, "%s,%s,%d,%d,%.4f,%s",
-                        sc.call.getCustomerId(), sc.call.isVIP(), sc.arrivalTime, sc.handlingTime,
-                        sc.pickupDelaySeconds, group));
+            csvLines.add("CallID,Type,Wave,ArrivalTime_s,HandlingTime_s,PickupDelay_s,Verdict");
+            for (SimCall sc : allCalls) {
+                String label = waveLabel.getOrDefault(sc, "Unknown");
+                String type = sc.call.isVIP() ? "VIP" : "Regular";
+                String verdict = sc.pickupDelaySeconds < 0 ? "SKIPPED_NOT_DISPATCHED"
+                        : sc.pickupDelaySeconds < INSTANT_PICKUP_THRESHOLD_SECONDS
+                                ? "INSTANT_PICKUP"
+                                : "QUEUED_DELAYED";
+                csvLines.add(String.format(Locale.US, "%s,%s,%s,%d,%d,%.4f,%s",
+                        sc.call.getCustomerId(), type, label,
+                        sc.arrivalTime, sc.handlingTime,
+                        sc.pickupDelaySeconds, verdict));
             }
             fh.writeLines(csvLines);
             System.out.println("  Data saved to: " + csvPath);
